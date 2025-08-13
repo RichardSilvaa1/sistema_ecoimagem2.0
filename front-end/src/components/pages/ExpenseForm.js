@@ -15,101 +15,294 @@ import {
   AlertTitle,
   Divider,
   Autocomplete,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Fade,
+  useMediaQuery,
+  useTheme,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
-import { Save, ArrowBack, AttachMoney } from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import { NumericFormat } from 'react-number-format'; // Alterado de NumberFormat para NumericFormat
+import {
+  Save,
+  ArrowBack,
+  AttachMoney,
+  Receipt,
+  CalendarToday,
+  Category,
+  Payment,
+  CheckCircle,
+  Info,
+  Edit,
+  Add,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { NumericFormat } from 'react-number-format';
 import api from '../../services/api';
 import Layout from '../layout/Layout';
 
-// Tema reutilizável (mantido inalterado)
+// Tema premium idêntico às outras páginas
 const theme = createTheme({
   palette: {
-    primary: { main: '#26A69A', dark: '#00897B', light: '#4DB6AC' },
-    secondary: { main: '#FF7043', dark: '#F4511E', light: '#FF8A65' },
-    success: { main: '#9CCC65', light: '#AED581' },
-    warning: { main: '#FFA726', light: '#FFB300' },
-    error: { main: '#EF5350', dark: '#E53935' },
-    background: { default: '#ECEFF1', paper: 'rgba(255, 255, 255, 0.9)' },
-    text: { primary: '#263238', secondary: '#546E7A' },
-    grey: { 300: '#CFD8DC', 400: '#B0BEC5' },
+    mode: 'light',
+    primary: {
+      main: '#0F766E',
+      light: '#14B8A6',
+      dark: '#134E4A',
+      contrastText: '#FFFFFF',
+    },
+    secondary: {
+      main: '#DC2626',
+      light: '#EF4444',
+      dark: '#991B1B',
+    },
+    success: {
+      main: '#059669',
+      light: '#10B981',
+      dark: '#047857',
+    },
+    warning: {
+      main: '#D97706',
+      light: '#F59E0B',
+      dark: '#92400E',
+    },
+    error: {
+      main: '#DC2626',
+      light: '#EF4444',
+      dark: '#991B1B',
+    },
+    background: {
+      default: '#F8FAFC',
+      paper: '#FFFFFF',
+    },
+    text: {
+      primary: '#0F172A',
+      secondary: '#475569',
+    },
+    grey: {
+      50: '#F8FAFC',
+      100: '#F1F5F9',
+      200: '#E2E8F0',
+      300: '#CBD5E1',
+      400: '#94A3B8',
+      500: '#64748B',
+      600: '#475569',
+      700: '#334155',
+      800: '#1E293B',
+      900: '#0F172A',
+    },
   },
   typography: {
-    fontFamily: '"Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h5: { fontWeight: 600, letterSpacing: '-0.01em', fontSize: '1.6rem' },
-    h6: { fontWeight: 500, fontSize: '1.2rem' },
-    subtitle1: { fontWeight: 400, color: '#546E7A', fontSize: '1rem' },
-    caption: { color: '#546E7A', fontSize: '0.85rem' },
-    body1: { fontSize: '0.95rem', fontWeight: 400 },
+    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    h3: {
+      fontWeight: 800,
+      fontSize: '2.25rem',
+      lineHeight: 1.2,
+      letterSpacing: '-0.025em',
+    },
+    h4: {
+      fontWeight: 700,
+      fontSize: '1.875rem',
+      lineHeight: 1.3,
+      letterSpacing: '-0.025em',
+    },
+    h5: {
+      fontWeight: 600,
+      fontSize: '1.5rem',
+      lineHeight: 1.4,
+      letterSpacing: '-0.01em',
+    },
+    h6: {
+      fontWeight: 600,
+      fontSize: '1.125rem',
+      lineHeight: 1.4,
+    },
+    subtitle1: {
+      fontWeight: 500,
+      fontSize: '1rem',
+      lineHeight: 1.5,
+    },
+    subtitle2: {
+      fontWeight: 500,
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
+    },
+    body1: {
+      fontSize: '0.875rem',
+      lineHeight: 1.6,
+      fontWeight: 400,
+    },
+    body2: {
+      fontSize: '0.75rem',
+      lineHeight: 1.5,
+      fontWeight: 400,
+    },
+    caption: {
+      fontSize: '0.75rem',
+      lineHeight: 1.4,
+      fontWeight: 400,
+      color: '#64748B',
+    },
   },
+  shape: {
+    borderRadius: 12,
+  },
+  shadows: [
+    'none',
+    '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  ],
   components: {
-    MuiPaper: {
+    MuiCssBaseline: {
       styleOverrides: {
-        root: {
-          borderRadius: 14,
-          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.08)',
-          backdropFilter: 'saturate(180%) blur(10px)',
-          transition: 'box-shadow 0.3s ease',
-          '&:hover': { boxShadow: '0 8px 28px rgba(0, 0, 0, 0.12)' },
+        body: {
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#CBD5E1 #F1F5F9',
+          '&::-webkit-scrollbar': {
+            width: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#F1F5F9',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#CBD5E1',
+            borderRadius: 4,
+            '&:hover': {
+              backgroundColor: '#94A3B8',
+            },
+          },
         },
       },
     },
-    MuiTextField: {
+    MuiPaper: {
       styleOverrides: {
         root: {
-          background: '#F7FAFC',
-          borderRadius: 12,
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 12,
-            transition: 'all 0.3s ease',
-            '&:hover fieldset': { borderColor: '#26A69A' },
-            '&.Mui-focused fieldset': { borderColor: '#26A69A', boxShadow: '0 0 0 3px #4DB6AC44' },
-            '& input': { padding: '12px 14px' },
+          backgroundImage: 'none',
+          border: '1px solid #E2E8F0',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transform: 'translateY(-2px)',
           },
-          '& .MuiInputLabel-root': { fontWeight: 500, color: '#546E7A', fontSize: '1rem' },
+        },
+        elevation1: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          border: '1px solid #E2E8F0',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transform: 'translateY(-4px)',
+            borderColor: '#0F766E',
+          },
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 14,
-          textTransform: 'capitalize',
-          padding: '10px 24px',
+          textTransform: 'none',
           fontWeight: 600,
-          fontSize: '14px',
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 6px 18px rgba(0,0,0,0.15)' },
-          '&:disabled': { background: '#CFD8DC', color: '#B0BEC5', boxShadow: 'none', transform: 'none' },
+          borderRadius: 8,
+          padding: '12px 24px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+          },
         },
         contained: {
-          background: 'linear-gradient(45deg, #26A69A, #4DB6AC)',
-          color: '#FFFFFF',
-          boxShadow: '0 4px 12px rgba(38, 166, 154, 0.6)',
-          '&:hover': { background: 'linear-gradient(45deg, #4DB6AC, #26A69A)' },
+          background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+          boxShadow: '0 4px 6px -1px rgba(15, 118, 110, 0.3)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #134E4A 0%, #0F766E 100%)',
+            boxShadow: '0 10px 15px -3px rgba(15, 118, 110, 0.4)',
+          },
+          '&:active': {
+            transform: 'translateY(0)',
+          },
         },
         outlined: {
-          borderColor: '#FF7043',
-          color: '#FF7043',
-          '&:hover': { borderColor: '#F4511E', color: '#F4511E', background: 'rgba(255, 112, 67, 0.08)' },
+          borderWidth: 1.5,
+          '&:hover': {
+            borderWidth: 1.5,
+            backgroundColor: 'rgba(15, 118, 110, 0.04)',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#F8FAFC',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              backgroundColor: '#F1F5F9',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#0F766E',
+              },
+            },
+            '&.Mui-focused': {
+              backgroundColor: '#FFFFFF',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#0F766E',
+                borderWidth: 2,
+                boxShadow: '0 0 0 3px rgba(15, 118, 110, 0.1)',
+              },
+            },
+          },
         },
       },
     },
     MuiAlert: {
       styleOverrides: {
-        root: { borderRadius: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.09)', fontSize: '14px', padding: '14px 20px' },
-        icon: { color: 'inherit', fontSize: '22px' },
+        root: {
+          borderRadius: 12,
+          border: '1px solid',
+          fontSize: '0.875rem',
+        },
+        standardSuccess: {
+          backgroundColor: '#F0FDF4',
+          borderColor: '#BBF7D0',
+          color: '#166534',
+        },
+        standardError: {
+          backgroundColor: '#FEF2F2',
+          borderColor: '#FECACA',
+          color: '#991B1B',
+        },
+        standardWarning: {
+          backgroundColor: '#FFFBEB',
+          borderColor: '#FED7AA',
+          color: '#92400E',
+        },
+        standardInfo: {
+          backgroundColor: '#EFF6FF',
+          borderColor: '#BFDBFE',
+          color: '#1E40AF',
+        },
       },
     },
   },
 });
 
-// Componente para campo moeda
+// Componente para campo moeda premium
 const CurrencyInput = React.forwardRef(({ onChange, name, value, error, helperText, disabled }, ref) => (
-  <NumericFormat // Alterado de NumberFormat para NumericFormat
+  <NumericFormat
     getInputRef={ref}
     value={value}
-    onValueChange={(values) => onChange(values.floatValue)} // Ajustado para 'values'
+    onValueChange={(values) => onChange(values.floatValue)}
     thousandSeparator="."
     decimalSeparator=","
     decimalScale={2}
@@ -119,28 +312,37 @@ const CurrencyInput = React.forwardRef(({ onChange, name, value, error, helperTe
     disabled={disabled}
     customInput={TextField}
     fullWidth
-    label="Valor"
+    label="Valor da Despesa"
     error={!!error}
     helperText={helperText}
     inputProps={{ 'aria-label': 'Valor da despesa' }}
-    size="small"
+    InputProps={{
+      startAdornment: (
+        <AttachMoney sx={{ color: 'primary.main', mr: 1, fontSize: '1.2rem' }} />
+      ),
+    }}
   />
 ));
 
 const ExpenseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const muiTheme = useTheme();
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
   const {
     register,
     handleSubmit,
     setValue,
     control,
-    formState: { errors },
+    watch,
+    formState: { errors, isValid },
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
+      description: '',
       amount: '',
-      expense_date: '', // Alinhado com o backend
+      expense_date: '',
       due_date: '',
       category_id: '',
       status: 'pendente',
@@ -152,26 +354,25 @@ const ExpenseForm = () => {
   const [saveMessage, setSaveMessage] = useState(null);
   const [categories, setCategories] = useState([]);
 
-  // Opções para status e payment_method baseadas no ENUM do backend
+  // Opções para status e payment_method
   const statusOptions = [
-    { label: 'Pago', value: 'pago' },
-    { label: 'Pendente', value: 'pendente' },
-    { label: 'Parcelado', value: 'parcelado' },
+    { label: 'Pago', value: 'pago', color: 'success' },
+    { label: 'Pendente', value: 'pendente', color: 'warning' },
+    { label: 'Parcelado', value: 'parcelado', color: 'info' },
   ];
 
   const paymentMethodOptions = [
     { label: 'Dinheiro', value: 'dinheiro' },
-    { label: 'Cartão de Crédito', value: 'cartao de credito' },
+    { label: 'Cartão de Crédito', value: 'credit_card' },
     { label: 'Cartão de Débito', value: 'cartao de debito' },
     { label: 'Transferência', value: 'transferencia' },
-    { label: 'Pix', value: 'pix' },
+    { label: 'PIX', value: 'pix' },
     { label: 'Boleto', value: 'boleto' },
   ];
 
   useEffect(() => {
     fetchCategories();
     if (id) fetchExpense();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchCategories = async () => {
@@ -187,6 +388,7 @@ const ExpenseForm = () => {
     setLoading(true);
     try {
       const res = await api.get(`/api/financas/expenses/${id}`);
+      setValue('description', res.data.description || '');
       setValue('amount', res.data.amount);
       setValue('expense_date', res.data.expense_date ? new Date(res.data.expense_date).toISOString().split('T')[0] : '');
       setValue('due_date', res.data.due_date ? new Date(res.data.due_date).toISOString().split('T')[0] : '');
@@ -232,7 +434,7 @@ const ExpenseForm = () => {
       setTimeout(() => {
         setSaveMessage(null);
         navigate('/despesas');
-      }, 1800);
+      }, 2000);
     } catch (error) {
       toast.error('Erro ao salvar despesa: ' + (error.response?.data?.error || error.message));
     } finally {
@@ -245,263 +447,329 @@ const ExpenseForm = () => {
       <Layout>
         <Box
           sx={{
-            bgcolor: theme.palette.background.default,
+            bgcolor: 'background.default',
             minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            py: { xs: 2, sm: 3 },
-            px: { xs: 1, sm: 2 },
-            boxSizing: 'border-box',
+            py: { xs: 2, md: 4 },
           }}
         >
-          {loading && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-              <CircularProgress size={32} sx={{ color: theme.palette.primary.main }} />
-            </Box>
-          )}
-
-          <Paper
-            component={motion.div}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            sx={{
-              width: '100%',
-              maxWidth: 920,
-              mx: 'auto',
-              p: { xs: 3, sm: 5 },
-              borderRadius: 14,
-              display: 'flex',
-              flexDirection: 'column',
-              boxSizing: 'border-box',
-            }}
-            elevation={6}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-              <motion.div
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-              >
-                <AttachMoney sx={{ mr: 1, color: theme.palette.warning.main, fontSize: '2rem' }} />
-              </motion.div>
-              <Typography variant="h5" sx={{ color: theme.palette.text.primary, fontWeight: 700 }}>
-                {id ? 'Editar Despesa' : 'Nova Despesa'}
-              </Typography>
-            </Box>
-
-            <Typography
-              variant="subtitle1"
-              sx={{ textAlign: 'center', mb: 4, fontSize: '1rem', color: theme.palette.text.secondary }}
+          <Container maxWidth="lg">
+            {/* Header Premium */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              {id ? 'Atualize os detalhes da despesa.' : 'Registre uma nova despesa financeira.'}
-            </Typography>
-
-            {saveMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Alert severity="success" icon={<Save sx={{ color: theme.palette.success.main }} />} sx={{ mb: 3 }}>
-                  <AlertTitle>Sucesso</AlertTitle>
-                  {saveMessage}
-                </Alert>
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} style={{ flex: 1, display: 'flex', flexDirection: 'column' }} noValidate>
-              <Divider sx={{ my: 3, bgcolor: theme.palette.grey[300] }} />
-              <Typography variant="h6" sx={{ mb: 3, color: theme.palette.text.primary, fontWeight: 600 }}>
-                Dados da Despesa
-              </Typography>
-
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(250px, 1fr))' },
-                  gap: 20,
-                  mb: 4,
+              <Paper 
+                sx={{ 
+                  p: 4, 
+                  mb: 4, 
+                  background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '200px',
+                    height: '200px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '50%',
+                    transform: 'translate(50px, -50px)',
+                  },
                 }}
               >
-                <Controller
-                  name="amount"
-                  control={control}
-                  rules={{ required: 'Valor é obrigatório', min: { value: 0.01, message: 'Valor deve ser positivo' } }}
-                  render={({ field }) => (
-                    <CurrencyInput
-                      {...field}
-                      error={!!errors.amount}
-                      helperText={errors.amount?.message}
-                      disabled={loading}
-                    />
-                  )}
-                />
+                <Box sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AttachMoney sx={{ mr: 2, fontSize: '3rem' }} />
+                      <Box>
+                        <Typography variant="h4">
+                          {id ? 'Editar Despesa' : 'Nova Despesa'}
+                        </Typography>
+                        <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+                          {id ? 'Atualize os detalhes da despesa existente' : 'Registre uma nova despesa financeira'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Tooltip title="Voltar para lista">
+                      <IconButton
+                        onClick={() => navigate('/despesas')}
+                        sx={{ 
+                          color: 'white',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
+                        }}
+                      >
+                        <ArrowBack />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </Paper>
+            </motion.div>
 
-                <TextField
-                  fullWidth
-                  label="Data da Despesa"
-                  type="date"
-                  {...register('expense_date', { validate: validateExpenseDate })}
-                  error={!!errors.expense_date}
-                  helperText={errors.expense_date?.message}
-                  disabled={loading}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ 'aria-label': 'Data da despesa' }}
-                  sx={{
-                    '& input::-webkit-calendar-picker-indicator': {
-                      filter: 'invert(0.5) sepia(1) saturate(5) hue-rotate(160deg)',
-                      cursor: 'pointer',
-                    },
-                    background: '#F7FAFC',
-                    borderRadius: 12,
-                  }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Data de Vencimento"
-                  type="date"
-                  {...register('due_date', { validate: validateDueDate })}
-                  error={!!errors.due_date}
-                  helperText={errors.due_date?.message}
-                  disabled={loading}
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
-                  inputProps={{ 'aria-label': 'Data de vencimento da despesa' }}
-                  sx={{
-                    '& input::-webkit-calendar-picker-indicator': {
-                      filter: 'invert(0.5) sepia(1) saturate(5) hue-rotate(160deg)',
-                      cursor: 'pointer',
-                    },
-                    background: '#F7FAFC',
-                    borderRadius: 12,
-                  }}
-                />
-
-                <Controller
-                  name="category_id"
-                  control={control}
-                  rules={{ required: 'Categoria é obrigatória' }}
-                  render={({ field }) => (
-                    <Autocomplete
-                      options={categories}
-                      getOptionLabel={(option) => option.name || ''}
-                      loadingText="Carregando..."
-                      noOptionsText="Nenhuma categoria encontrada"
-                      value={categories.find((cat) => String(cat.id) === field.value) || null}
-                      onChange={(_, data) => field.onChange(data ? String(data.id) : '')}
-                      disabled={loading}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Categoria"
-                          size="small"
-                          error={!!errors.category_id}
-                          helperText={errors.category_id?.message}
-                          inputProps={{
-                            ...params.inputProps,
-                            'aria-label': 'Categoria da despesa',
-                            placeholder: 'Selecione uma categoria',
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                />
-
-                <Controller
-                  name="status"
-                  control={control}
-                  rules={{ required: 'Status é obrigatório' }}
-                  render={({ field }) => (
-                    <Autocomplete
-                      options={statusOptions}
-                      getOptionLabel={(option) => option.label}
-                      value={statusOptions.find((opt) => opt.value === field.value) || null}
-                      onChange={(_, data) => field.onChange(data ? data.value : '')}
-                      disabled={loading}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Status"
-                          size="small"
-                          error={!!errors.status}
-                          helperText={errors.status?.message}
-                          inputProps={{
-                            ...params.inputProps,
-                            'aria-label': 'Status da despesa',
-                            placeholder: 'Selecione um status',
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                />
-
-                <Controller
-                  name="payment_method"
-                  control={control}
-                  rules={{ required: 'Método de pagamento é obrigatório' }}
-                  render={({ field }) => (
-                    <Autocomplete
-                      options={paymentMethodOptions}
-                      getOptionLabel={(option) => option.label}
-                      value={paymentMethodOptions.find((opt) => opt.value === field.value) || null}
-                      onChange={(_, data) => field.onChange(data ? data.value : '')}
-                      disabled={loading}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Método de Pagamento"
-                          size="small"
-                          error={!!errors.payment_method}
-                          helperText={errors.payment_method?.message}
-                          inputProps={{
-                            ...params.inputProps,
-                            'aria-label': 'Método de pagamento',
-                            placeholder: 'Selecione um método',
-                          }}
-                        />
-                      )}
-                    />
-                  )}
-                />
-              </Box>
-
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-start' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<ArrowBack sx={{ fontSize: '1.3rem' }} />}
-                  onClick={() => navigate('/despesas')}
-                  disabled={loading}
-                  size="medium"
-                  aria-label="Voltar para lista de despesas"
+            {/* Mensagem de sucesso */}
+            <AnimatePresence>
+              {saveMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  Voltar
-                </Button>
+                  <Alert 
+                    severity="success" 
+                    icon={<CheckCircle />} 
+                    sx={{ mb: 3 }}
+                    onClose={() => setSaveMessage(null)}
+                  >
+                    <AlertTitle>Sucesso</AlertTitle>
+                    {saveMessage}
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                <Button
-                  variant="contained"
-                  startIcon={
-                    loading ? (
-                      <CircularProgress size={18} sx={{ color: 'white' }} />
-                    ) : (
-                      <Save sx={{ color: '#FFFFFF', fontSize: '1.3rem' }} />
-                    )
-                  }
-                  type="submit"
-                  disabled={loading}
-                  size="medium"
-                  aria-label="Salvar despesa"
-                >
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </Button>
-              </Box>
-            </form>
-          </Paper>
+            {/* Formulário Completo */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Paper sx={{ p: 4 }}>
+                <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                  <Typography variant="h5" sx={{ mb: 4, color: 'text.primary', fontWeight: 600 }}>
+                    Dados da Despesa
+                  </Typography>
+
+                  <Grid container spacing={4}>
+                    {/* Linha 1: Descrição */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Descrição da Despesa"
+                        placeholder="Ex: Gasolina, Supermercado, Conta de luz..."
+                        {...register('description', { 
+                          required: 'Descrição é obrigatória',
+                          minLength: { value: 3, message: 'Descrição deve ter pelo menos 3 caracteres' }
+                        })}
+                        error={!!errors.description}
+                        helperText={errors.description?.message}
+                        disabled={loading}
+                        InputProps={{
+                          startAdornment: (
+                            <Edit sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    {/* Linha 2: Valor e Categoria */}
+                    <Grid item xs={12} md={6}>
+                      <Controller
+                        name="amount"
+                        control={control}
+                        rules={{ 
+                          required: 'Valor é obrigatório', 
+                          min: { value: 0.01, message: 'Valor deve ser positivo' } 
+                        }}
+                        render={({ field }) => (
+                          <CurrencyInput
+                            {...field}
+                            error={!!errors.amount}
+                            helperText={errors.amount?.message}
+                            disabled={loading}
+                          />
+                        )}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Controller
+                        name="category_id"
+                        control={control}
+                        rules={{ required: 'Categoria é obrigatória' }}
+                        render={({ field }) => (
+                          <Autocomplete
+                            options={categories}
+                            getOptionLabel={(option) => option.name || ''}
+                            loadingText="Carregando..."
+                            noOptionsText="Nenhuma categoria encontrada"
+                            value={categories.find((cat) => String(cat.id) === field.value) || null}
+                            onChange={(_, data) => field.onChange(data ? String(data.id) : '')}
+                            disabled={loading}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Categoria"
+                                error={!!errors.category_id}
+                                helperText={errors.category_id?.message}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <Category sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                                  ),
+                                }}
+                                inputProps={{
+                                  ...params.inputProps,
+                                  'aria-label': 'Categoria da despesa',
+                                  placeholder: 'Selecione uma categoria',
+                                }}
+                              />
+                            )}
+                          />
+                        )}
+                      />
+                    </Grid>
+
+                    {/* Linha 3: Datas */}
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data da Despesa"
+                        type="date"
+                        {...register('expense_date', { validate: validateExpenseDate })}
+                        error={!!errors.expense_date}
+                        helperText={errors.expense_date?.message}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data da despesa' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data de Vencimento"
+                        type="date"
+                        {...register('due_date', { validate: validateDueDate })}
+                        error={!!errors.due_date}
+                        helperText={errors.due_date?.message}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data de vencimento da despesa' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    {/* Linha 4: Método de Pagamento e Status */}
+                    <Grid item xs={12} md={6}>
+                      <Controller
+                        name="payment_method"
+                        control={control}
+                        rules={{ required: 'Método de pagamento é obrigatório' }}
+                        render={({ field }) => (
+                          <Autocomplete
+                            options={paymentMethodOptions}
+                            getOptionLabel={(option) => option.label}
+                            value={paymentMethodOptions.find((opt) => opt.value === field.value) || null}
+                            onChange={(_, data) => field.onChange(data ? data.value : '')}
+                            disabled={loading}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Método de Pagamento"
+                                error={!!errors.payment_method}
+                                helperText={errors.payment_method?.message}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <Payment sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                                  ),
+                                }}
+                                inputProps={{
+                                  ...params.inputProps,
+                                  'aria-label': 'Método de pagamento',
+                                  placeholder: 'Selecione um método',
+                                }}
+                              />
+                            )}
+                          />
+                        )}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Controller
+                        name="status"
+                        control={control}
+                        rules={{ required: 'Status é obrigatório' }}
+                        render={({ field }) => (
+                          <Autocomplete
+                            options={statusOptions}
+                            getOptionLabel={(option) => option.label}
+                            value={statusOptions.find((opt) => opt.value === field.value) || null}
+                            onChange={(_, data) => field.onChange(data ? data.value : '')}
+                            disabled={loading}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Status"
+                                error={!!errors.status}
+                                helperText={errors.status?.message}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <Info sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                                  ),
+                                }}
+                                inputProps={{
+                                  ...params.inputProps,
+                                  'aria-label': 'Status da despesa',
+                                  placeholder: 'Selecione um status',
+                                }}
+                              />
+                            )}
+                          />
+                        )}
+                      />
+                    </Grid>
+                  </Grid>
+
+                  <Divider sx={{ my: 4 }} />
+
+                  {/* Botões de Ação */}
+                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ArrowBack />}
+                      onClick={() => navigate('/despesas')}
+                      disabled={loading}
+                      sx={{ minWidth: 120 }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save />}
+                      disabled={loading || !isValid}
+                      sx={{ 
+                        minWidth: 140,
+                        px: 4,
+                        py: 1.5,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {loading ? 'Salvando...' : id ? 'Atualizar Despesa' : 'Salvar Despesa'}
+                    </Button>
+                  </Box>
+                </form>
+              </Paper>
+            </motion.div>
+          </Container>
         </Box>
       </Layout>
     </ThemeProvider>
@@ -509,3 +777,5 @@ const ExpenseForm = () => {
 };
 
 export default ExpenseForm;
+
+

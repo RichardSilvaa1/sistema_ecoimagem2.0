@@ -24,125 +24,225 @@ import {
   useMediaQuery,
   useTheme,
   TableContainer,
+  Divider,
+  IconButton,
+  Tooltip,
+  Skeleton,
 } from '@mui/material';
-import { Download, Assessment as AssessmentIcon, TrendingUp, TrendingDown, Category, DateRange } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import {
+  Download,
+  Assessment as AssessmentIcon,
+  TrendingUp,
+  TrendingDown,
+  Category,
+  DateRange,
+  Refresh,
+  FileDownload,
+  PictureAsPdf,
+  TableChart,
+  BarChart,
+  AccountBalance,
+  MonetizationOn,
+  Receipt,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import Layout from '../layout/Layout';
 
-// Tema aprimorado com design premium
+// Tema premium idêntico ao da página de despesas
 const theme = createTheme({
   palette: {
-    primary: { 
-      main: '#1976d2', 
-      dark: '#115293', 
-      light: '#42a5f5' 
+    mode: 'light',
+    primary: {
+      main: '#0F766E',
+      light: '#14B8A6',
+      dark: '#134E4A',
+      contrastText: '#FFFFFF',
     },
-    secondary: { 
-      main: '#dc004e', 
-      dark: '#9a0036', 
-      light: '#e91e63' 
+    secondary: {
+      main: '#DC2626',
+      light: '#EF4444',
+      dark: '#991B1B',
     },
-    success: { 
-      main: '#2e7d32', 
-      light: '#4caf50' 
+    success: {
+      main: '#059669',
+      light: '#10B981',
+      dark: '#047857',
     },
-    warning: { 
-      main: '#ed6c02', 
-      light: '#ff9800' 
+    warning: {
+      main: '#D97706',
+      light: '#F59E0B',
+      dark: '#92400E',
     },
-    error: { 
-      main: '#d32f2f', 
-      dark: '#c62828' 
+    error: {
+      main: '#DC2626',
+      light: '#EF4444',
+      dark: '#991B1B',
     },
-    background: { 
-      default: '#f8fafc', 
-      paper: '#ffffff' 
+    background: {
+      default: '#F8FAFC',
+      paper: '#FFFFFF',
     },
-    text: { 
-      primary: '#1a202c', 
-      secondary: '#4a5568' 
+    text: {
+      primary: '#0F172A',
+      secondary: '#475569',
     },
-    grey: { 
-      50: '#f7fafc',
-      100: '#edf2f7',
-      200: '#e2e8f0',
-      300: '#cbd5e0',
-      400: '#a0aec0',
-      500: '#718096',
-      600: '#4a5568',
-      700: '#2d3748',
-      800: '#1a202c',
-      900: '#171923'
+    grey: {
+      50: '#F8FAFC',
+      100: '#F1F5F9',
+      200: '#E2E8F0',
+      300: '#CBD5E1',
+      400: '#94A3B8',
+      500: '#64748B',
+      600: '#475569',
+      700: '#334155',
+      800: '#1E293B',
+      900: '#0F172A',
     },
   },
   typography: {
-    fontFamily: '"Inter", "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    h4: { 
-      fontWeight: 700, 
+    fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    h3: {
+      fontWeight: 800,
+      fontSize: '2.25rem',
+      lineHeight: 1.2,
       letterSpacing: '-0.025em',
-      fontSize: '2rem',
-      '@media (max-width:768px)': {
-        fontSize: '1.5rem'
-      }
     },
-    h5: { 
-      fontWeight: 600, 
-      letterSpacing: '-0.01em', 
+    h4: {
+      fontWeight: 700,
+      fontSize: '1.875rem',
+      lineHeight: 1.3,
+      letterSpacing: '-0.025em',
+    },
+    h5: {
+      fontWeight: 600,
       fontSize: '1.5rem',
-      '@media (max-width:768px)': {
-        fontSize: '1.25rem'
-      }
+      lineHeight: 1.4,
+      letterSpacing: '-0.01em',
     },
-    h6: { 
-      fontWeight: 600, 
-      fontSize: '1.25rem',
-      '@media (max-width:768px)': {
-        fontSize: '1.1rem'
-      }
+    h6: {
+      fontWeight: 600,
+      fontSize: '1.125rem',
+      lineHeight: 1.4,
     },
-    subtitle1: { 
-      fontWeight: 400, 
-      color: '#4a5568', 
+    subtitle1: {
+      fontWeight: 500,
       fontSize: '1rem',
-      lineHeight: 1.5
+      lineHeight: 1.5,
     },
-    body1: { 
-      fontSize: '0.95rem', 
-      fontWeight: 400,
-      lineHeight: 1.6
+    subtitle2: {
+      fontWeight: 500,
+      fontSize: '0.875rem',
+      lineHeight: 1.5,
     },
-    body2: { 
-      fontSize: '0.875rem', 
+    body1: {
+      fontSize: '0.875rem',
+      lineHeight: 1.6,
       fontWeight: 400,
-      color: '#4a5568'
+    },
+    body2: {
+      fontSize: '0.75rem',
+      lineHeight: 1.5,
+      fontWeight: 400,
+    },
+    caption: {
+      fontSize: '0.75rem',
+      lineHeight: 1.4,
+      fontWeight: 400,
+      color: '#64748B',
     },
   },
+  shape: {
+    borderRadius: 12,
+  },
+  shadows: [
+    'none',
+    '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  ],
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#CBD5E1 #F1F5F9',
+          '&::-webkit-scrollbar': {
+            width: 8,
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#F1F5F9',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#CBD5E1',
+            borderRadius: 4,
+            '&:hover': {
+              backgroundColor: '#94A3B8',
+            },
+          },
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          border: '1px solid #e2e8f0',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': { 
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            transform: 'translateY(-1px)'
+          backgroundImage: 'none',
+          border: '1px solid #E2E8F0',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transform: 'translateY(-2px)',
           },
+        },
+        elevation1: {
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          border: '1px solid #e2e8f0',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': { 
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            transform: 'translateY(-2px)'
+          border: '1px solid #E2E8F0',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transform: 'translateY(-4px)',
+            borderColor: '#0F766E',
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+          borderRadius: 8,
+          padding: '10px 20px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+          },
+        },
+        contained: {
+          background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+          boxShadow: '0 4px 6px -1px rgba(15, 118, 110, 0.3)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #134E4A 0%, #0F766E 100%)',
+            boxShadow: '0 10px 15px -3px rgba(15, 118, 110, 0.4)',
+          },
+          '&:active': {
+            transform: 'translateY(0)',
+          },
+        },
+        outlined: {
+          borderWidth: 1.5,
+          '&:hover': {
+            borderWidth: 1.5,
+            backgroundColor: 'rgba(15, 118, 110, 0.04)',
           },
         },
       },
@@ -151,43 +251,58 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 12,
-            backgroundColor: '#f7fafc',
-            transition: 'all 0.2s ease-in-out',
+            backgroundColor: '#F8FAFC',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-              backgroundColor: '#edf2f7',
-              '& fieldset': { borderColor: '#1976d2' }
+              backgroundColor: '#F1F5F9',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#0F766E',
+              },
             },
             '&.Mui-focused': {
-              backgroundColor: '#ffffff',
-              '& fieldset': { 
-                borderColor: '#1976d2', 
+              backgroundColor: '#FFFFFF',
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#0F766E',
                 borderWidth: 2,
-                boxShadow: '0 0 0 3px rgba(25, 118, 210, 0.1)'
-              }
+                boxShadow: '0 0 0 3px rgba(15, 118, 110, 0.1)',
+              },
             },
           },
         },
       },
     },
-    MuiButton: {
+    MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 10,
-          textTransform: 'none',
-          fontWeight: 600,
-          fontSize: '0.875rem',
-          padding: '10px 24px',
-          transition: 'all 0.2s ease-in-out',
-          '&:hover': { 
-            transform: 'translateY(-1px)', 
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' 
+          fontWeight: 500,
+          borderRadius: 6,
+        },
+        colorSuccess: {
+          backgroundColor: '#DCFCE7',
+          color: '#166534',
+          '& .MuiChip-icon': {
+            color: '#166534',
           },
         },
-        contained: {
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          '&:hover': { 
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)' 
+        colorWarning: {
+          backgroundColor: '#FEF3C7',
+          color: '#92400E',
+          '& .MuiChip-icon': {
+            color: '#92400E',
+          },
+        },
+        colorError: {
+          backgroundColor: '#FEE2E2',
+          color: '#991B1B',
+          '& .MuiChip-icon': {
+            color: '#991B1B',
+          },
+        },
+        colorInfo: {
+          backgroundColor: '#DBEAFE',
+          color: '#1E40AF',
+          '& .MuiChip-icon': {
+            color: '#1E40AF',
           },
         },
       },
@@ -195,30 +310,26 @@ const theme = createTheme({
     MuiTableCell: {
       styleOverrides: {
         root: {
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid #E2E8F0',
           padding: '16px',
-          fontSize: '0.875rem',
         },
         head: {
-          backgroundColor: '#f7fafc',
+          backgroundColor: '#F8FAFC',
           fontWeight: 600,
-          color: '#2d3748',
-          borderBottom: '2px solid #cbd5e0',
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: '#374151',
         },
       },
     },
-    MuiAlert: {
+    MuiTableRow: {
       styleOverrides: {
-        root: { 
-          borderRadius: 12,
-          border: '1px solid',
-          fontSize: '0.875rem'
+        root: {
+          '&:hover': {
+            backgroundColor: 'rgba(15, 118, 110, 0.02)',
+          },
         },
-        standardSuccess: {
-          backgroundColor: '#f0fff4',
-          borderColor: '#9ae6b4',
-          color: '#22543d'
-        }
       },
     },
   },
@@ -232,52 +343,107 @@ const formatarData = (dataString) => {
     : data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 };
 
-const StatCard = ({ title, value, icon, color = 'primary', trend = null }) => {
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value || 0);
+};
+
+// Componente de Card de Estatística Premium
+const StatCard = ({ title, value, icon, color = 'primary', trend = null, isLoading = false }) => {
+  const gradients = {
+    primary: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+    success: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+    error: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
+    warning: 'linear-gradient(135deg, #D97706 0%, #F59E0B 100%)',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.5 }}
     >
-      <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {title}
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: `${color}.main` }}>
-                {value}
-              </Typography>
-              {trend && (
-                <Chip
-                  size="small"
-                  icon={trend >= 0 ? <TrendingUp /> : <TrendingDown />}
-                  label={`${trend >= 0 ? '+' : ''}${trend}%`}
-                  color={trend >= 0 ? 'success' : 'error'}
-                  sx={{ fontSize: '0.75rem' }}
-                />
-              )}
-            </Box>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: `${color}.main`,
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {icon}
-            </Box>
+      <Card
+        sx={{
+          background: gradients[color],
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100%',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '100px',
+            height: '100px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '50%',
+            transform: 'translate(30px, -30px)',
+          },
+        }}
+      >
+        <CardContent sx={{ position: 'relative', zIndex: 1, p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            {React.cloneElement(icon, { sx: { fontSize: 32, opacity: 0.9 } })}
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              {title}
+            </Typography>
           </Box>
+          
+          {isLoading ? (
+            <Skeleton variant="text" width="60%" height={40} sx={{ bgcolor: 'rgba(255, 255, 255, 0.2)' }} />
+          ) : (
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              {value}
+            </Typography>
+          )}
+          
+          {trend !== null && !isLoading && (
+            <Chip
+              size="small"
+              icon={trend >= 0 ? <TrendingUp /> : <TrendingDown />}
+              label={`${trend >= 0 ? '+' : ''}${trend}%`}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                '& .MuiChip-icon': { color: 'white' },
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </motion.div>
   );
 };
+
+// Componente de Loading para Tabelas
+const TableSkeleton = ({ rows = 5, columns = 4 }) => (
+  <Table>
+    <TableHead>
+      <TableRow>
+        {[...Array(columns)].map((_, index) => (
+          <TableCell key={index}>
+            <Skeleton variant="text" width="80%" />
+          </TableCell>
+        ))}
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {[...Array(rows)].map((_, rowIndex) => (
+        <TableRow key={rowIndex}>
+          {[...Array(columns)].map((_, colIndex) => (
+            <TableCell key={colIndex}>
+              <Skeleton variant="text" width="60%" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+);
 
 const FinancialReports = () => {
   const muiTheme = useTheme();
@@ -300,7 +466,10 @@ const FinancialReports = () => {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ start_date: filters.start_date, end_date: filters.end_date }).toString();
+      const params = new URLSearchParams({ 
+        start_date: filters.start_date, 
+        end_date: filters.end_date 
+      }).toString();
       const res = await api.get(`/api/financas/reports/summary?${params}`);
       setSummaryData(res.data);
     } catch (error) {
@@ -313,7 +482,10 @@ const FinancialReports = () => {
   const fetchByCategory = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ start_date: filters.start_date, end_date: filters.end_date }).toString();
+      const params = new URLSearchParams({ 
+        start_date: filters.start_date, 
+        end_date: filters.end_date 
+      }).toString();
       const res = await api.get(`/api/financas/reports/by-category?${params}`);
       setCategoryData(res.data);
     } catch (error) {
@@ -396,50 +568,101 @@ const FinancialReports = () => {
           sx={{
             bgcolor: 'background.default',
             minHeight: '100vh',
-            py: { xs: 2, sm: 3, md: 4 },
+            py: { xs: 2, md: 4 },
           }}
         >
           <Container maxWidth="xl">
-            {/* Header */}
-            <Box sx={{ mb: { xs: 3, md: 4 } }}>
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+            {/* Header Premium */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Paper 
+                sx={{ 
+                  p: 4, 
+                  mb: 4, 
+                  background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '200px',
+                    height: '200px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '50%',
+                    transform: 'translate(50px, -50px)',
+                  },
+                }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <AssessmentIcon sx={{ mr: 2, color: 'primary.main', fontSize: '2rem' }} />
-                  <Typography variant="h4" color="text.primary">
-                    Relatórios Financeiros
+                <Box sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                    <AssessmentIcon sx={{ mr: 2, fontSize: '3rem' }} />
+                    <Typography variant="h3" sx={{ textAlign: 'center' }}>
+                      Relatórios Financeiros
+                    </Typography>
+                  </Box>
+                  <Typography variant="subtitle1" sx={{ textAlign: 'center', opacity: 0.9, mb: 2 }}>
+                    Análises detalhadas e insights inteligentes do seu desempenho financeiro
+                  </Typography>
+                  <Typography variant="body1" sx={{ textAlign: 'center', fontWeight: 600 }}>
+                    Visualize tendências, exporte dados e tome decisões informadas
                   </Typography>
                 </Box>
-                <Typography variant="subtitle1" sx={{ maxWidth: 600 }}>
-                  Visualize e exporte relatórios financeiros detalhados com análises abrangentes do seu desempenho financeiro.
-                </Typography>
-              </motion.div>
-            </Box>
+              </Paper>
+            </motion.div>
 
             {/* Mensagem de sucesso */}
-            {message && (
-              <Fade in={!!message}>
-                <Alert 
-                  severity="success" 
-                  icon={<Download />} 
-                  sx={{ mb: 3 }}
-                  onClose={() => setMessage(null)}
+            <AnimatePresence>
+              {message && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <AlertTitle>Exportação Concluída</AlertTitle>
-                  {message}
-                </Alert>
-              </Fade>
-            )}
+                  <Alert 
+                    severity="success" 
+                    icon={<FileDownload />} 
+                    sx={{ mb: 3 }}
+                    onClose={() => setMessage(null)}
+                  >
+                    <AlertTitle>Exportação Concluída</AlertTitle>
+                    {message}
+                  </Alert>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Filtros */}
+            {/* Filtros Premium */}
             <Paper sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                <DateRange sx={{ mr: 1 }} />
-                Filtros de Pesquisa
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', fontWeight: 600 }}>
+                  <DateRange sx={{ mr: 1 }} />
+                  Filtros e Controles
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Tooltip title="Atualizar relatórios">
+                    <IconButton onClick={handleFetchAll} disabled={loading}>
+                      <Refresh />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Exportar PDF">
+                    <IconButton onClick={() => handleExport('pdf')} disabled={loading}>
+                      <PictureAsPdf />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Exportar Excel">
+                    <IconButton onClick={() => handleExport('xlsx')} disabled={loading}>
+                      <TableChart />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
               
               <Grid container spacing={3} alignItems="end">
                 <Grid item xs={12} sm={6} md={3}>
@@ -482,106 +705,121 @@ const FinancialReports = () => {
                     variant="contained"
                     onClick={handleFetchAll}
                     disabled={loading}
-                    sx={{ py: 1.5 }}
+                    sx={{ py: 1.5, fontSize: '1rem', fontWeight: 600 }}
+                    startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Refresh />}
                   >
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Atualizar Relatórios'}
+                    {loading ? 'Carregando...' : 'Atualizar'}
                   </Button>
                 </Grid>
               </Grid>
             </Paper>
 
-            {/* Cards de Resumo */}
-            {summaryData && (
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <StatCard
-                    title="Despesas Totais"
-                    value={`R$ ${parseFloat(summaryData.totalExpenses || 0).toFixed(2)}`}
-                    icon={<TrendingDown />}
-                    color="error"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <StatCard
-                    title="Receitas Totais"
-                    value={`R$ ${parseFloat(summaryData.totalRevenues || 0).toFixed(2)}`}
-                    icon={<TrendingUp />}
-                    color="success"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={12} md={4}>
-                  <StatCard
-                    title="Resultado"
-                    value={`R$ ${parseFloat(summaryData.profit || 0).toFixed(2)}`}
-                    icon={summaryData.profit >= 0 ? <TrendingUp /> : <TrendingDown />}
-                    color={summaryData.profit >= 0 ? 'success' : 'error'}
-                  />
-                </Grid>
+            {/* Cards de Resumo Premium */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={4}>
+                <StatCard
+                  title="Despesas Totais"
+                  value={formatCurrency(summaryData?.totalExpenses)}
+                  icon={<Receipt />}
+                  color="error"
+                  isLoading={loading && !summaryData}
+                />
               </Grid>
-            )}
+              <Grid item xs={12} sm={6} md={4}>
+                <StatCard
+                  title="Receitas Totais"
+                  value={formatCurrency(summaryData?.totalRevenues)}
+                  icon={<MonetizationOn />}
+                  color="success"
+                  isLoading={loading && !summaryData}
+                />
+              </Grid>
+              <Grid item xs={12} sm={12} md={4}>
+                <StatCard
+                  title="Resultado Líquido"
+                  value={formatCurrency(summaryData?.profit)}
+                  icon={summaryData?.profit >= 0 ? <TrendingUp /> : <TrendingDown />}
+                  color={summaryData?.profit >= 0 ? 'success' : 'error'}
+                  isLoading={loading && !summaryData}
+                />
+              </Grid>
+            </Grid>
 
             <Grid container spacing={4}>
               {/* Relatório por Categoria */}
               <Grid item xs={12} lg={6}>
                 <Paper sx={{ p: 3, height: 'fit-content' }}>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                     <Category sx={{ mr: 1 }} />
                     Despesas por Categoria
                   </Typography>
                   
                   <TableContainer sx={{ maxHeight: 400 }}>
-                    <Table stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Categoria</TableCell>
-                          <TableCell align="right">Total</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {loading ? (
+                    {loading ? (
+                      <TableSkeleton rows={5} columns={3} />
+                    ) : (
+                      <Table stickyHeader>
+                        <TableHead>
                           <TableRow>
-                            <TableCell colSpan={2} align="center" sx={{ py: 4 }}>
-                              <CircularProgress size={32} />
-                            </TableCell>
+                            <TableCell>Categoria</TableCell>
+                            <TableCell align="right">Total</TableCell>
+                            <TableCell align="center">Participação</TableCell>
                           </TableRow>
-                        ) : categoryData.length > 0 ? (
-                          categoryData.map((item, index) => (
-                            <TableRow 
-                              key={index} 
-                              sx={{ 
-                                '&:hover': { bgcolor: 'grey.50' },
-                                '&:last-child td': { border: 0 }
-                              }}
-                            >
-                              <TableCell component="th" scope="row">
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {item.FinancialCategory?.name || 'Categoria não definida'}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography 
-                                  variant="body2" 
+                        </TableHead>
+                        <TableBody>
+                          {categoryData.length > 0 ? (
+                            categoryData.map((item, index) => {
+                              const total = categoryData.reduce((sum, cat) => sum + parseFloat(cat.total || 0), 0);
+                              const percentage = total > 0 ? ((parseFloat(item.total || 0) / total) * 100).toFixed(1) : 0;
+                              
+                              return (
+                                <motion.tr
+                                  key={item.category || index}
+                                  component={TableRow}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.3, delay: index * 0.05 }}
                                   sx={{ 
-                                    fontWeight: 600, 
-                                    color: 'error.main' 
+                                    '&:hover': { 
+                                      backgroundColor: 'rgba(15, 118, 110, 0.04)',
+                                      transform: 'scale(1.01)',
+                                      transition: 'all 0.2s ease-in-out'
+                                    } 
                                   }}
                                 >
-                                  R$ {parseFloat(item.total || 0).toFixed(2)}
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {item.category || 'Sem categoria'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
+                                      {formatCurrency(item.total)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="center">
+                                    <Chip
+                                      size="small"
+                                      label={`${percentage}%`}
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+                                </motion.tr>
+                              );
+                            })
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={3} align="center">
+                                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                                  Nenhum dado encontrado para o período selecionado
                                 </Typography>
                               </TableCell>
                             </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={2} align="center" sx={{ py: 4 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Nenhum dado por categoria disponível
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                          )}
+                        </TableBody>
+                      </Table>
+                    )}
                   </TableContainer>
                 </Paper>
               </Grid>
@@ -589,99 +827,115 @@ const FinancialReports = () => {
               {/* Relatório Mensal */}
               <Grid item xs={12} lg={6}>
                 <Paper sx={{ p: 3, height: 'fit-content' }}>
-                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <DateRange sx={{ mr: 1 }} />
+                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', fontWeight: 600 }}>
+                    <BarChart sx={{ mr: 1 }} />
                     Relatório Mensal - {filters.year}
                   </Typography>
                   
                   <TableContainer sx={{ maxHeight: 400 }}>
-                    <Table stickyHeader>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Mês</TableCell>
-                          <TableCell align="right">Despesas</TableCell>
-                          <TableCell align="right">Receitas</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {loading ? (
+                    {loading ? (
+                      <TableSkeleton rows={6} columns={4} />
+                    ) : (
+                      <Table stickyHeader>
+                        <TableHead>
                           <TableRow>
-                            <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                              <CircularProgress size={32} />
-                            </TableCell>
+                            <TableCell>Mês</TableCell>
+                            <TableCell align="right">Despesas</TableCell>
+                            <TableCell align="right">Receitas</TableCell>
+                            <TableCell align="right">Resultado</TableCell>
                           </TableRow>
-                        ) : monthlyDataCombined.length > 0 ? (
-                          monthlyDataCombined.map((item, index) => (
-                            <TableRow 
-                              key={index} 
-                              sx={{ 
-                                '&:hover': { bgcolor: 'grey.50' },
-                                '&:last-child td': { border: 0 }
-                              }}
-                            >
-                              <TableCell component="th" scope="row">
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {formatarData(item.month)}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography 
-                                  variant="body2" 
+                        </TableHead>
+                        <TableBody>
+                          {monthlyDataCombined.length > 0 ? (
+                            monthlyDataCombined.map((item, index) => {
+                              const resultado = parseFloat(item.revenues || 0) - parseFloat(item.expenses || 0);
+                              
+                              return (
+                                <motion.tr
+                                  key={item.month}
+                                  component={TableRow}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ duration: 0.3, delay: index * 0.05 }}
                                   sx={{ 
-                                    fontWeight: 600, 
-                                    color: 'error.main' 
+                                    '&:hover': { 
+                                      backgroundColor: 'rgba(15, 118, 110, 0.04)',
+                                      transform: 'scale(1.01)',
+                                      transition: 'all 0.2s ease-in-out'
+                                    } 
                                   }}
                                 >
-                                  R$ {parseFloat(item.expenses).toFixed(2)}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Typography 
-                                  variant="body2" 
-                                  sx={{ 
-                                    fontWeight: 600, 
-                                    color: 'success.main' 
-                                  }}
-                                >
-                                  R$ {parseFloat(item.revenues).toFixed(2)}
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                      {formatarData(item.month)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
+                                      {formatCurrency(item.expenses)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
+                                      {formatCurrency(item.revenues)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Chip
+                                      size="small"
+                                      label={formatCurrency(resultado)}
+                                      color={resultado >= 0 ? 'success' : 'error'}
+                                      icon={resultado >= 0 ? <TrendingUp /> : <TrendingDown />}
+                                    />
+                                  </TableCell>
+                                </motion.tr>
+                              );
+                            })
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={4} align="center">
+                                <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                                  Nenhum dado encontrado para o ano {filters.year}
                                 </Typography>
                               </TableCell>
                             </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Nenhum dado mensal disponível para {filters.year}
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                          )}
+                        </TableBody>
+                      </Table>
+                    )}
                   </TableContainer>
                 </Paper>
               </Grid>
             </Grid>
 
-            {/* Exportar Relatório */}
+            {/* Botões de Exportação */}
             <Paper sx={{ p: 3, mt: 4 }}>
-              <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                <Download sx={{ mr: 1 }} />
+              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 Exportar Relatórios
               </Typography>
-              
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6} md={3}>
                   <Button
                     fullWidth
-                    variant="contained"
-                    startIcon={<Download />}
+                    variant="outlined"
+                    startIcon={<PictureAsPdf />}
+                    onClick={() => handleExport('pdf')}
+                    disabled={loading}
+                    sx={{ py: 1.5 }}
+                  >
+                    Exportar PDF
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<TableChart />}
                     onClick={() => handleExport('xlsx')}
                     disabled={loading}
-                    color="primary"
+                    sx={{ py: 1.5 }}
                   >
-                    Exportar XLSX
+                    Exportar Excel
                   </Button>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -689,11 +943,23 @@ const FinancialReports = () => {
                     fullWidth
                     variant="outlined"
                     startIcon={<Download />}
-                    onClick={() => handleExport('pdf')}
+                    onClick={() => handleExport('csv')}
                     disabled={loading}
-                    color="primary"
+                    sx={{ py: 1.5 }}
                   >
-                    Exportar PDF
+                    Exportar CSV
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<FileDownload />}
+                    onClick={() => handleExport('json')}
+                    disabled={loading}
+                    sx={{ py: 1.5 }}
+                  >
+                    Exportar JSON
                   </Button>
                 </Grid>
               </Grid>
@@ -706,3 +972,4 @@ const FinancialReports = () => {
 };
 
 export default FinancialReports;
+
