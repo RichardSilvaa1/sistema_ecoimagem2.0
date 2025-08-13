@@ -45,6 +45,11 @@ import {
   TrendingUp,
   CalendarToday,
   Payment,
+  CreditCard,
+  AccountBalance,
+  LocalAtm,
+  Payments,
+  MonetizationOn,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
@@ -461,11 +466,79 @@ const RevenuesList = () => {
 
   const hasActiveFilters = Object.values(filters).some(value => value !== '');
 
-  // Cálculos para resumo
+  // Cálculos para resumo geral
   const totalRevenues = revenues.length;
   const totalAmount = revenues.reduce((sum, rev) => sum + parseFloat(rev.amount || 0), 0);
   const receivedRevenues = revenues.filter(rev => rev.status === 'recebido').length;
   const pendingRevenues = revenues.filter(rev => rev.status !== 'recebido').length;
+
+  // Cálculos por método de pagamento
+  const getPaymentMethodData = () => {
+    const methodTotals = {};
+    
+    revenues.forEach(rev => {
+      const method = rev.payment_method || 'Não informado';
+      if (!methodTotals[method]) {
+        methodTotals[method] = {
+          total: 0,
+          count: 0,
+          received: 0,
+          pending: 0
+        };
+      }
+      
+      methodTotals[method].total += parseFloat(rev.amount || 0);
+      methodTotals[method].count += 1;
+      
+      if (rev.status === 'recebido') {
+        methodTotals[method].received += parseFloat(rev.amount || 0);
+      } else {
+        methodTotals[method].pending += parseFloat(rev.amount || 0);
+      }
+    });
+    
+    return methodTotals;
+  };
+
+  // Função para obter ícone do método de pagamento
+  const getPaymentMethodIcon = (method) => {
+    const methodLower = method?.toLowerCase() || '';
+    
+    if (methodLower.includes('credit') || methodLower.includes('credito')) {
+      return <CreditCard sx={{ fontSize: '2rem' }} />;
+    } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
+      return <Payment sx={{ fontSize: '2rem' }} />;
+    } else if (methodLower.includes('pix')) {
+      return <Payments sx={{ fontSize: '2rem' }} />;
+    } else if (methodLower.includes('dinheiro') || methodLower.includes('cash')) {
+      return <LocalAtm sx={{ fontSize: '2rem' }} />;
+    } else if (methodLower.includes('transfer') || methodLower.includes('transferencia')) {
+      return <AccountBalance sx={{ fontSize: '2rem' }} />;
+    } else {
+      return <MonetizationOn sx={{ fontSize: '2rem' }} />;
+    }
+  };
+
+  // Função para obter cor do método de pagamento
+  const getPaymentMethodColor = (method) => {
+    const methodLower = method?.toLowerCase() || '';
+    
+    if (methodLower.includes('credit') || methodLower.includes('credito')) {
+      return '#DC2626'; // Vermelho
+    } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
+      return '#059669'; // Verde
+    } else if (methodLower.includes('pix')) {
+      return '#7C3AED'; // Roxo
+    } else if (methodLower.includes('dinheiro') || methodLower.includes('cash')) {
+      return '#D97706'; // Laranja
+    } else if (methodLower.includes('transfer') || methodLower.includes('transferencia')) {
+      return '#0F766E'; // Teal
+    } else {
+      return '#64748B'; // Cinza
+    }
+  };
+
+  const paymentMethodData = getPaymentMethodData();
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -549,7 +622,7 @@ const RevenuesList = () => {
               </Paper>
             </motion.div>
 
-            {/* Resumo */}
+            {/* Resumo Geral */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -607,6 +680,87 @@ const RevenuesList = () => {
               </Grid>
             </motion.div>
 
+            {/* Cards por Método de Pagamento */}
+            {Object.keys(paymentMethodData).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Paper sx={{ p: 3, mb: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                    Receitas por Método de Pagamento
+                  </Typography>
+                  <Grid container spacing={3}>
+                    {Object.entries(paymentMethodData).map(([method, data], index) => (
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={method}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                        >
+                          <Card 
+                            sx={{ 
+                              background: `linear-gradient(135deg, ${getPaymentMethodColor(method)}15 0%, ${getPaymentMethodColor(method)}25 100%)`,
+                              border: `1px solid ${getPaymentMethodColor(method)}30`,
+                              '&:hover': {
+                                borderColor: getPaymentMethodColor(method),
+                                transform: 'translateY(-8px)',
+                              }
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Box sx={{ color: getPaymentMethodColor(method), mr: 2 }}>
+                                  {getPaymentMethodIcon(method)}
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+                                    {method}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {data.count} receita{data.count !== 1 ? 's' : ''}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="h5" sx={{ color: getPaymentMethodColor(method), fontWeight: 700 }}>
+                                  R$ {data.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Total
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                  <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 600 }}>
+                                    R$ {data.received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Recebido
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ textAlign: 'center' }}>
+                                  <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                                    R$ {data.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Pendente
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Paper>
+              </motion.div>
+            )}
+
             {/* Mensagem de sucesso */}
             <AnimatePresence>
               {message && (
@@ -633,7 +787,7 @@ const RevenuesList = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Paper sx={{ p: 3, mb: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -766,7 +920,7 @@ const RevenuesList = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
             >
               <Paper sx={{ overflow: 'hidden' }}>
                 <Box sx={{ overflowX: 'auto' }}>
@@ -847,9 +1001,14 @@ const RevenuesList = () => {
                                 />
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body2">
-                                  {rev.payment_method || 'N/A'}
-                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Box sx={{ color: getPaymentMethodColor(rev.payment_method), mr: 1 }}>
+                                    {getPaymentMethodIcon(rev.payment_method)}
+                                  </Box>
+                                  <Typography variant="body2">
+                                    {rev.payment_method || 'N/A'}
+                                  </Typography>
+                                </Box>
                               </TableCell>
                               <TableCell align="center">
                                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
@@ -900,4 +1059,5 @@ const RevenuesList = () => {
 };
 
 export default RevenuesList;
+
 
