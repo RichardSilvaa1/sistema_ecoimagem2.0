@@ -1,0 +1,9 @@
+# Ignorar node_modules e arquivos de cache
+node_modules/
+.cache/
+Front-end/node_modules/
+Front-end/node_modules/.cache/
+
+# Ignorar o arquivo de API
+front-end/src/services/api.js
+ 
