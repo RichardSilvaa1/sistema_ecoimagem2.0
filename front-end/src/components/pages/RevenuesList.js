@@ -55,7 +55,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import Layout from '../layout/Layout';
 
-// Tema premium (mantido idêntico ao original)
+// Tema premium idêntico às outras páginas
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -393,15 +393,6 @@ const RevenuesList = () => {
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
   const [revenues, setRevenues] = useState([]);
-  const [summary, setSummary] = useState({
-    total_exames: 0,
-    total_value: 0,
-    exames_pagos: 0,
-    exames_pendentes: 0,
-    valor_pago: 0,
-    valor_pendente: 0,
-    by_payment_type: {},
-  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -419,61 +410,30 @@ const RevenuesList = () => {
   const fetchRevenues = async () => {
     setLoading(true);
     try {
-      // Map frontend filters to backend query parameters
-      const params = new URLSearchParams();
-      if (filters.status) {
-        params.append('pago', filters.status === 'recebido' ? 'true' : 'false');
-      }
-      if (filters.payment_method) {
-        params.append('tipo_pagamento_id', filters.payment_method);
-      }
-      if (filters.start_date) {
-        params.append('startDate', filters.start_date);
-      }
-      if (filters.end_date) {
-        params.append('endDate', filters.end_date);
-      }
-
-      // Fetch revenue list
-      const revenuesRes = await api.get(`/api/financas/revenues${params ? `?${params}` : ''}`);
-      const revenuesData = Array.isArray(revenuesRes.data.items)
-        ? revenuesRes.data.items
-        : Array.isArray(revenuesRes.data)
-          ? revenuesRes.data
+      const params = new URLSearchParams(
+        Object.fromEntries(Object.entries(filters).filter(([_, v]) => v !== ''))
+      ).toString();
+      const res = await api.get(`/api/financas/revenues${params ? `?${params}` : ''}`);
+      
+      // Ajustar para a estrutura correta do JSON retornado
+      const data = Array.isArray(res.data.items)
+        ? res.data.items
+        : Array.isArray(res.data)
+          ? res.data
           : [];
-      setRevenues(revenuesData);
-
-      // Fetch financial report summary
-      const reportRes = await api.get(`/api/relatorios/financeiros${params ? `?${params}` : ''}`);
-      setSummary({
-        total_exames: reportRes.data.total_exames || 0,
-        total_value: reportRes.data.total_value || 0,
-        exames_pagos: reportRes.data.exames_pagos || 0,
-        exames_pendentes: reportRes.data.exames_pendentes || 0,
-        valor_pago: reportRes.data.valor_pago || 0,
-        valor_pendente: reportRes.data.valor_pendente || 0,
-        by_payment_type: reportRes.data.by_payment_type || {},
-      });
+      
+      setRevenues(data);
     } catch (error) {
-      console.error('Error fetching revenues or report:', error);
-      toast.error('Erro ao carregar dados: ' + (error.response?.data?.error || error.message));
-      setRevenues([]);
-      setSummary({
-        total_exames: 0,
-        total_value: 0,
-        exames_pagos: 0,
-        exames_pendentes: 0,
-        valor_pago: 0,
-        valor_pendente: 0,
-        by_payment_type: {},
-      });
+      console.error('Error fetching revenues:', error);
+      toast.error('Erro ao carregar receitas: ' + (error.response?.data?.error || error.message));
+      setRevenues([]); // Fallback to empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id, amount) => {
-    if (!window.confirm(`Tem certeza que deseja excluir a receita de R$${parseFloat(amount).toFixed(2)}?`)) return;
+    if (!window.confirm(`Tem certeza que deseja excluir a receita de R$${amount.toFixed(2)}?`)) return;
     setLoading(true);
     try {
       await api.delete(`/api/financas/revenues/${id}`);
@@ -506,9 +466,44 @@ const RevenuesList = () => {
 
   const hasActiveFilters = Object.values(filters).some(value => value !== '');
 
+  // Cálculos para resumo geral
+  const totalRevenues = revenues.length;
+  const totalAmount = revenues.reduce((sum, rev) => sum + parseFloat(rev.amount || 0), 0);
+  const receivedRevenues = revenues.filter(rev => rev.status === 'recebido').length;
+  const pendingRevenues = revenues.filter(rev => rev.status !== 'recebido').length;
+
+  // Cálculos por método de pagamento
+  const getPaymentMethodData = () => {
+    const methodTotals = {};
+    
+    revenues.forEach(rev => {
+      const method = rev.payment_method || 'Não informado';
+      if (!methodTotals[method]) {
+        methodTotals[method] = {
+          total: 0,
+          count: 0,
+          received: 0,
+          pending: 0
+        };
+      }
+      
+      methodTotals[method].total += parseFloat(rev.amount || 0);
+      methodTotals[method].count += 1;
+      
+      if (rev.status === 'recebido') {
+        methodTotals[method].received += parseFloat(rev.amount || 0);
+      } else {
+        methodTotals[method].pending += parseFloat(rev.amount || 0);
+      }
+    });
+    
+    return methodTotals;
+  };
+
   // Função para obter ícone do método de pagamento
   const getPaymentMethodIcon = (method) => {
     const methodLower = method?.toLowerCase() || '';
+    
     if (methodLower.includes('credit') || methodLower.includes('credito')) {
       return <CreditCard sx={{ fontSize: '2rem' }} />;
     } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
@@ -527,6 +522,7 @@ const RevenuesList = () => {
   // Função para obter cor do método de pagamento
   const getPaymentMethodColor = (method) => {
     const methodLower = method?.toLowerCase() || '';
+    
     if (methodLower.includes('credit') || methodLower.includes('credito')) {
       return '#DC2626'; // Vermelho
     } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
@@ -541,6 +537,8 @@ const RevenuesList = () => {
       return '#64748B'; // Cinza
     }
   };
+
+  const paymentMethodData = getPaymentMethodData();
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -570,10 +568,10 @@ const RevenuesList = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <Paper
-                sx={{
-                  p: 4,
-                  mb: 4,
+              <Paper 
+                sx={{ 
+                  p: 4, 
+                  mb: 4, 
                   background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                   color: 'white',
                   position: 'relative',
@@ -609,10 +607,10 @@ const RevenuesList = () => {
                         <IconButton
                           onClick={fetchRevenues}
                           disabled={loading}
-                          sx={{
+                          sx={{ 
                             color: 'white',
                             bgcolor: 'rgba(255, 255, 255, 0.1)',
-                            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' },
+                            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' }
                           }}
                         >
                           <Refresh />
@@ -635,7 +633,7 @@ const RevenuesList = () => {
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 700 }}>
-                        {summary.total_exames}
+                        {totalRevenues}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Total de Receitas
@@ -647,7 +645,7 @@ const RevenuesList = () => {
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                        R$ {summary.total_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        R$ {totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Valor Total
@@ -659,7 +657,7 @@ const RevenuesList = () => {
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" sx={{ color: 'success.main', fontWeight: 700 }}>
-                        {summary.exames_pagos}
+                        {receivedRevenues}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Recebidas
@@ -671,22 +669,10 @@ const RevenuesList = () => {
                   <Card>
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 700 }}>
-                        {summary.exames_pendentes}
+                        {pendingRevenues}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Pendentes
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card>
-                    <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" sx={{ color: 'warning.main', fontWeight: 700 }}>
-                        R$ {summary.valor_pendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Valor Pendente
                       </Typography>
                     </CardContent>
                   </Card>
@@ -695,7 +681,7 @@ const RevenuesList = () => {
             </motion.div>
 
             {/* Cards por Método de Pagamento */}
-            {Object.keys(summary.by_payment_type).length > 0 && (
+            {Object.keys(paymentMethodData).length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -706,21 +692,21 @@ const RevenuesList = () => {
                     Receitas por Método de Pagamento
                   </Typography>
                   <Grid container spacing={3}>
-                    {Object.entries(summary.by_payment_type).map(([method, data], index) => (
+                    {Object.entries(paymentMethodData).map(([method, data], index) => (
                       <Grid item xs={12} sm={6} md={4} lg={3} key={method}>
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.1 }}
                         >
-                          <Card
-                            sx={{
+                          <Card 
+                            sx={{ 
                               background: `linear-gradient(135deg, ${getPaymentMethodColor(method)}15 0%, ${getPaymentMethodColor(method)}25 100%)`,
                               border: `1px solid ${getPaymentMethodColor(method)}30`,
                               '&:hover': {
                                 borderColor: getPaymentMethodColor(method),
                                 transform: 'translateY(-8px)',
-                              },
+                              }
                             }}
                           >
                             <CardContent>
@@ -737,18 +723,20 @@ const RevenuesList = () => {
                                   </Typography>
                                 </Box>
                               </Box>
+                              
                               <Box sx={{ mb: 2 }}>
                                 <Typography variant="h5" sx={{ color: getPaymentMethodColor(method), fontWeight: 700 }}>
-                                  R$ {data.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {data.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   Total
                                 </Typography>
                               </Box>
+
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                                 <Box sx={{ textAlign: 'center' }}>
                                   <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 600 }}>
-                                    R$ {data.paid_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ {data.received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
                                     Recebido
@@ -756,7 +744,7 @@ const RevenuesList = () => {
                                 </Box>
                                 <Box sx={{ textAlign: 'center' }}>
                                   <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 600 }}>
-                                    R$ {data.pending_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ {data.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </Typography>
                                   <Typography variant="caption" color="text.secondary">
                                     Pendente
@@ -782,9 +770,9 @@ const RevenuesList = () => {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Alert
-                    severity="success"
-                    icon={<Delete />}
+                  <Alert 
+                    severity="success" 
+                    icon={<Delete />} 
                     sx={{ mb: 3 }}
                     onClose={() => setMessage(null)}
                   >
@@ -959,9 +947,10 @@ const RevenuesList = () => {
                                   Nenhuma receita encontrada
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                  {hasActiveFilters
+                                  {hasActiveFilters 
                                     ? 'Tente ajustar os filtros ou limpar a busca'
-                                    : 'Comece criando sua primeira receita'}
+                                    : 'Comece criando sua primeira receita'
+                                  }
                                 </Typography>
                                 <Button
                                   variant="contained"
@@ -981,13 +970,13 @@ const RevenuesList = () => {
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.3, delay: index * 0.05 }}
-                              sx={{
-                                '&:hover': {
+                              sx={{ 
+                                '&:hover': { 
                                   '& .MuiTableCell-body': {
                                     backgroundColor: '#F0FDF4',
                                     borderColor: '#059669',
-                                  },
-                                },
+                                  }
+                                }
                               }}
                             >
                               <TableCell>
@@ -1004,9 +993,9 @@ const RevenuesList = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell>
-                                <Chip
-                                  label={rev.status || 'Pendente'}
-                                  size="small"
+                                <Chip 
+                                  label={rev.status || 'Pendente'} 
+                                  size="small" 
                                   color={getStatusColor(rev.status)}
                                   variant="filled"
                                 />
@@ -1070,3 +1059,5 @@ const RevenuesList = () => {
 };
 
 export default RevenuesList;
+
+

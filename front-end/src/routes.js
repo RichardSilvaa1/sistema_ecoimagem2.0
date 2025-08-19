@@ -18,8 +18,6 @@ import ExpensesList from './components/pages/ExpensesList';
 import ExpenseForm from './components/pages/ExpenseForm';
 import RevenuesList from './components/pages/RevenuesList';
 import RevenueForm from './components/pages/RevenueForm';
-import RelationsList from './components/pages/RelationsList';
-import RelationForm from './components/pages/RelationForm';
 import FinancialReports from './components/pages/FinancialReports'; // Novo para relatórios financeiros
 
 function AppRoutes() {
@@ -183,30 +181,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
-      <Route
-        path="/relacoes"
-        element={
-          <PrivateRoute>
-            <RelationsList />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/relacoes/novo"
-        element={
-          <PrivateRoute>
-            <RelationForm />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/relacoes/editar/:id"
-        element={
-          <PrivateRoute>
-            <RelationForm />
-          </PrivateRoute>
-        }
-      />
+
       <Route
         path="/relatorios-financeiros"
         element={

@@ -187,7 +187,7 @@ const theme = createTheme({
           border: '1px solid #E2E8F0',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06)',
             transform: 'translateY(-2px)',
           },
         },
@@ -344,6 +344,7 @@ const ExpenseForm = () => {
       amount: '',
       expense_date: '',
       due_date: '',
+      paid_at: '',
       category_id: '',
       status: 'pendente',
       payment_method: '',
@@ -358,6 +359,8 @@ const ExpenseForm = () => {
   const statusOptions = [
     { label: 'Pago', value: 'pago', color: 'success' },
     { label: 'Pendente', value: 'pendente', color: 'warning' },
+    { label: 'Atrasado', value: 'atrasado', color: 'error' },
+    { label: 'Cancelado', value: 'cancelado', color: 'secondary' },
     { label: 'Parcelado', value: 'parcelado', color: 'info' },
   ];
 
@@ -391,6 +394,7 @@ const ExpenseForm = () => {
       setValue('description', res.data.description || '');
       setValue('amount', res.data.amount);
       setValue('expense_date', res.data.expense_date ? new Date(res.data.expense_date).toISOString().split('T')[0] : '');
+      setValue('paid_at', res.data.paid_at ? new Date(res.data.paid_at).toISOString().split('T')[0] : '');
       setValue('due_date', res.data.due_date ? new Date(res.data.due_date).toISOString().split('T')[0] : '');
       setValue('category_id', res.data.category_id ? String(res.data.category_id) : '');
       setValue('status', res.data.status || 'pendente');
@@ -402,33 +406,47 @@ const ExpenseForm = () => {
     }
   };
 
-  // Validações
-  const validateDueDate = (value) => {
-    if (!value) return 'Data de vencimento é obrigatória';
+  // Validação para garantir que a data de pagamento não seja no futuro
+  const validatePaidAt = (value) => {
+    if (!value) return true;
     const selected = new Date(value);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (selected < today) return 'A data de vencimento não pode ser no passado';
+    if (selected > today) return 'A data de pagamento não pode ser no futuro';
     return true;
   };
 
-  const validateExpenseDate = (value) => {
-    if (!value) return 'Data da despesa é obrigatória';
-    const selected = new Date(value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selected > today) return 'A data da despesa não pode ser no futuro';
+  // Validação para garantir que a data de vencimento não seja no passado se o status for pendente
+  const validateDueDate = (value) => {
+    const status = watch('status');
+    // A validação agora é opcional, só verifica se a data está no passado se ela for fornecida
+    if (value) { 
+      const selected = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selected < today && status === 'pendente') {
+        return 'Atenção: A data de vencimento está no passado. Considere mudar o status.';
+      }
+    }
     return true;
   };
 
   const onSubmit = async (data) => {
     setLoading(true);
     try {
+      const expenseData = {
+        ...data,
+        amount: Number(data.amount),
+        expense_date: data.expense_date || null,
+        paid_at: data.paid_at || null,
+        due_date: data.due_date || null, // Permite que o campo seja nulo
+      };
+
       if (id) {
-        await api.put(`/api/financas/expenses/${id}`, data);
+        await api.put(`/api/financas/expenses/${id}`, expenseData);
         setSaveMessage('Despesa atualizada com sucesso!');
       } else {
-        await api.post('/api/financas/expenses', data);
+        await api.post('/api/financas/expenses', expenseData);
         setSaveMessage('Despesa criada com sucesso!');
       }
       setTimeout(() => {
@@ -624,18 +642,18 @@ const ExpenseForm = () => {
                       />
                     </Grid>
 
-                    {/* Linha 3: Datas */}
+                    {/* Linha 3: Data da Despesa e Data de Vencimento */}
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
                         label="Data da Despesa"
                         type="date"
-                        {...register('expense_date', { validate: validateExpenseDate })}
+                        {...register('expense_date', { required: 'Data da despesa é obrigatória' })}
                         error={!!errors.expense_date}
                         helperText={errors.expense_date?.message}
                         disabled={loading}
                         InputLabelProps={{ shrink: true }}
-                        inputProps={{ 'aria-label': 'Data da despesa' }}
+                        inputProps={{ 'aria-label': 'Data em que a despesa foi feita' }}
                         InputProps={{
                           startAdornment: (
                             <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
@@ -643,7 +661,7 @@ const ExpenseForm = () => {
                         }}
                       />
                     </Grid>
-
+                    
                     <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
@@ -662,8 +680,27 @@ const ExpenseForm = () => {
                         }}
                       />
                     </Grid>
+                    
+                    {/* Linha 4: Data de Pagamento, Método de Pagamento e Status */}
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data de Pagamento"
+                        type="date"
+                        {...register('paid_at', { validate: validatePaidAt })}
+                        error={!!errors.paid_at}
+                        helperText={errors.paid_at?.message}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data de pagamento da despesa' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
 
-                    {/* Linha 4: Método de Pagamento e Status */}
                     <Grid item xs={12} md={6}>
                       <Controller
                         name="payment_method"
@@ -777,5 +814,3 @@ const ExpenseForm = () => {
 };
 
 export default ExpenseForm;
-
-

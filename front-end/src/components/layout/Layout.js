@@ -843,7 +843,6 @@ const Layout = ({ children, onRefresh, isModalOpen = false }) => {
       '/categorias': 'Categorias',
       '/despesas': 'Despesas',
       '/receitas': 'Receitas',
-      '/relacoes': 'Relações',
       '/relatorios-financeiros': 'Relatórios Financeiros',
     };
     return routes[pathname] || 'Página Desconhecida';
@@ -877,7 +876,6 @@ const Layout = ({ children, onRefresh, isModalOpen = false }) => {
         { to: '/categorias', label: 'Categorias', icon: FiList },
         { to: '/despesas', label: 'Despesas', icon: FiDollarSign },
         { to: '/receitas', label: 'Receitas', icon: FiDollarSign },
-        { to: '/relacoes', label: 'Relações', icon: FiLink },
         { to: '/relatorios-financeiros', label: 'Relatórios Financeiros', icon: FiPieChart },
       ],
     },
