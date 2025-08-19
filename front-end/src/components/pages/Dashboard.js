@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext, useMemo, Suspense } from 'react
 
 // Importa componentes do Material-UI para layout, tipografia, botões, tabelas, formulários e responsividade
 import {
-  Grid, Card, Typography, Box, Stack, Fab, Tabs, Tab, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Paper, Select, MenuItem, FormControl, InputLabel, Button, GlobalStyles, useMediaQuery, ThemeProvider, createTheme
+  Grid, Card, Typography, Box, Stack, Fab, Tabs, Tab, Skeleton, Table, TableBody, TableCell, TableHead, TableRow, Paper, Select, MenuItem, FormControl, InputLabel, Button, GlobalStyles, useMediaQuery, ThemeProvider, createTheme, Container
 } from '@mui/material';
 
 // Importa componentes de gráficos de barra e rosca da biblioteca react-chartjs-2
@@ -19,7 +19,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Importa ícones do Material-UI para uso nos componentes
-import { MonetizationOn, WarningAmberRounded as Warning, Refresh, AssignmentTurnedIn, ListAlt, RestartAlt, Payment, LocalHospital, PieChart } from '@mui/icons-material';
+import { MonetizationOn, WarningAmberRounded as Warning, Refresh, AssignmentTurnedIn, ListAlt, RestartAlt, Payment, LocalHospital, PieChart, TrendingUp, Analytics } from '@mui/icons-material';
 
 // Importa biblioteca framer-motion para animações
 import { motion } from 'framer-motion';
@@ -39,265 +39,485 @@ import { AuthContext } from '../../contexts/AuthContext';
 // Registra os elementos e plugins necessários do Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-// Define paleta de cores modernas e acessíveis
+// Define paleta de cores premium e moderna
 const COLORS = {
-  primaryRoyalBlue: '#3B82F6', // Cor primária azul royal
-  primaryAquaGreen: '#67a516', // Cor primária verde aqua
-  secondaryGoldenYellow: '#F59E0B', // Cor secundária amarelo dourado
-  secondaryOrange: '#F97316', // Cor secundária laranja
-  secondaryPurple: '#8B5CF6', // Cor secundária roxo
-  secondaryred: '#eb0b0b', // Cor secundária vermelha
-  backgroundOffWhite: '#F8FAFC', // Cor de fundo off-white
-  textPrimary: '#111827', // Cor primária para textos
-  textWhite: '#F3F4F6', // Cor branca para textos
-  cardBackground: '#FFFFFF', // Cor de fundo para cartões
-  errorRed: '#FF4C4C', // Cor vermelha para erros
-  highlightOrange: '#FF9800', // Cor laranja para destaques
-  clinicVetVida: '#EC4899', // Cor para clínica Vet Vida
-  clinicAgroPet: '#3B82F6', // Cor para clínica AgroPet
-  clinicVixenVet: '#10B981', // Cor para clínica Vixen Vet
-  clinicDraBicho: '#F59E0B', // Cor para clínica Dra Bicho
+  // Cores primárias com gradientes mais sofisticados
+  primaryRoyalBlue: '#1E40AF', // Azul mais profundo e elegante
+  primaryAquaGreen: '#059669', // Verde mais refinado
+  secondaryGoldenYellow: '#D97706', // Amarelo mais elegante
+  secondaryOrange: '#EA580C', // Laranja mais vibrante
+  secondaryPurple: '#7C3AED', // Roxo mais sofisticado
+  secondaryred: '#DC2626', // Vermelho mais elegante
+  
+  // Cores de fundo premium
+  backgroundPrimary: '#F8FAFC', // Fundo principal mais suave
+  backgroundSecondary: '#F1F5F9', // Fundo secundário
+  backgroundCard: '#FFFFFF', // Fundo dos cards
+  
+  // Cores de texto refinadas
+  textPrimary: '#0F172A', // Texto principal mais escuro
+  textSecondary: '#475569', // Texto secundário
+  textMuted: '#94A3B8', // Texto esmaecido
+  textWhite: '#FFFFFF', // Texto branco
+  
+  // Cores das clínicas com tons mais premium
+  clinicVetVida: '#EC4899', // Rosa elegante
+  clinicAgroPet: '#3B82F6', // Azul moderno
+  clinicVixenVet: '#10B981', // Verde esmeralda
+  clinicDraBicho: '#F59E0B', // Dourado
+  
+  // Cores de destaque premium
+  accent: '#6366F1', // Índigo moderno
+  success: '#10B981', // Verde sucesso
+  warning: '#F59E0B', // Amarelo aviso
+  error: '#EF4444', // Vermelho erro
+  
+  // Gradientes premium
+  gradientPrimary: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  gradientSecondary: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  gradientSuccess: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  gradientWarning: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
 };
 
-// Define tipografia usada no layout
+// Define tipografia premium
 const FONTS = {
-  title: 'Montserrat, sans-serif', // Fonte para títulos
-  subtitle: 'Montserrat, sans-serif', // Fonte para subtítulos
-  numeric: 'Roboto Mono, monospace', // Fonte para números
-  body: 'Inter, sans-serif', // Fonte para textos gerais
-  cardFont: '"Inter", "Poppins", "Roboto", sans-serif', // Fontes para cartões
+  primary: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  secondary: '"Montserrat", sans-serif',
+  numeric: '"JetBrains Mono", "Roboto Mono", monospace',
+  heading: '"Poppins", sans-serif',
 };
 
-// Define escala tipográfica para tamanhos e pesos
+// Define escala tipográfica premium
 const TYPOGRAPHY_SCALE = {
-  h1: { fontSize: '2rem', fontWeight: 800, lineHeight: 1.2, fontFamily: FONTS.title }, // Estilo para títulos h1
-  h2: { fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.3, fontFamily: FONTS.subtitle }, // Estilo para títulos h2
-  body: { fontSize: '1rem', fontWeight: 400, lineHeight: 1.5, fontFamily: FONTS.body }, // Estilo para textos gerais
-  numeric: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.4, fontFamily: FONTS.numeric }, // Estilo para números
+  h1: { 
+    fontSize: '2.5rem', 
+    fontWeight: 700, 
+    lineHeight: 1.2, 
+    fontFamily: FONTS.heading,
+    letterSpacing: '-0.025em'
+  },
+  h2: { 
+    fontSize: '2rem', 
+    fontWeight: 600, 
+    lineHeight: 1.3, 
+    fontFamily: FONTS.heading,
+    letterSpacing: '-0.02em'
+  },
+  h3: { 
+    fontSize: '1.5rem', 
+    fontWeight: 600, 
+    lineHeight: 1.4, 
+    fontFamily: FONTS.heading,
+    letterSpacing: '-0.015em'
+  },
+  body: { 
+    fontSize: '1rem', 
+    fontWeight: 400, 
+    lineHeight: 1.6, 
+    fontFamily: FONTS.primary 
+  },
+  bodyLarge: { 
+    fontSize: '1.125rem', 
+    fontWeight: 400, 
+    lineHeight: 1.6, 
+    fontFamily: FONTS.primary 
+  },
+  numeric: { 
+    fontSize: '1.5rem', 
+    fontWeight: 600, 
+    lineHeight: 1.4, 
+    fontFamily: FONTS.numeric 
+  },
+  caption: { 
+    fontSize: '0.875rem', 
+    fontWeight: 500, 
+    lineHeight: 1.5, 
+    fontFamily: FONTS.primary,
+    color: COLORS.textSecondary
+  },
 };
 
-// Define estilos globais para elementos como cartões e botões
+// Define estilos premium para componentes
 const STYLES = {
-  cardBorderRadius: '20px', // Raio de borda para cartões
-  cardBoxShadow: '0px 8px 24px rgba(0, 0, 0, 0.1)', // Sombra para cartões
-  buttonBorderRadius: '12px', // Raio de borda para botões
+  cardBorderRadius: '16px',
+  cardBoxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  cardBoxShadowHover: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  buttonBorderRadius: '12px',
+  containerMaxWidth: '1400px',
+  spacing: {
+    xs: 1,
+    sm: 2,
+    md: 3,
+    lg: 4,
+    xl: 6
+  }
 };
 
 // Função para verificar contraste de acessibilidade
 const checkContrast = (foreground, background) => {
-  // Verifica se o contraste entre as cores atende ao padrão AA para acessibilidade
   return tinycolor.isReadable(foreground, background, { level: 'AA', size: 'small' })
-    ? foreground // Retorna a cor original se o contraste for adequado
-    : tinycolor(foreground).darken(0).toString(); // Escurece a cor em 10% se o contraste não for adequado
+    ? foreground
+    : tinycolor(foreground).darken(20).toString();
 };
 
-// Função para escurecer cor em % (multiplicado por 100)
-const darken = (color, amount) => tinycolor(color).darken(amount * 100).toString(); // Escurece uma cor com base no percentual fornecido
+// Função para escurecer cor
+const darken = (color, amount) => tinycolor(color).darken(amount * 100).toString();
 
-// Define tema de breakpoints e cores primárias/secundárias do MUI
+// Função para clarear cor
+const lighten = (color, amount) => tinycolor(color).lighten(amount * 100).toString();
+
+// Define tema premium do Material-UI
 const theme = createTheme({
   palette: {
-    primary: { main: COLORS.primaryRoyalBlue }, // Cor primária do tema
-    secondary: { main: COLORS.secondaryGoldenYellow }, // Cor secundária do tema
+    primary: { main: COLORS.primaryRoyalBlue },
+    secondary: { main: COLORS.accent },
+    background: {
+      default: COLORS.backgroundPrimary,
+      paper: COLORS.backgroundCard,
+    },
+    text: {
+      primary: COLORS.textPrimary,
+      secondary: COLORS.textSecondary,
+    },
   },
+  typography: {
+    fontFamily: FONTS.primary,
+    h1: TYPOGRAPHY_SCALE.h1,
+    h2: TYPOGRAPHY_SCALE.h2,
+    h3: TYPOGRAPHY_SCALE.h3,
+    body1: TYPOGRAPHY_SCALE.body,
+    body2: TYPOGRAPHY_SCALE.caption,
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  shadows: [
+    'none',
+    '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+    '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  ],
   breakpoints: {
     values: {
-      xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536, // Breakpoints para responsividade
+      xs: 0, sm: 640, md: 768, lg: 1024, xl: 1280, xxl: 1536,
     },
   },
 });
 
+// Configurações globais premium do ChartJS
+ChartJS.defaults.font.family = FONTS.primary;
+ChartJS.defaults.color = COLORS.textSecondary;
+ChartJS.defaults.plugins.legend.labels.boxWidth = 12;
+ChartJS.defaults.plugins.legend.labels.padding = 16;
+ChartJS.defaults.plugins.legend.position = 'bottom';
+ChartJS.defaults.animation.duration = 800;
+ChartJS.defaults.animation.easing = 'easeInOutQuart';
 
-
-// Configurações globais do ChartJS
-ChartJS.defaults.font.family = FONTS.body; // Define fonte padrão para gráficos
-ChartJS.defaults.color = COLORS.textPrimary; // Define cor padrão para textos dos gráficos
-ChartJS.defaults.plugins.legend.labels.boxWidth = 14; // Define largura da caixa da legenda
-ChartJS.defaults.plugins.legend.labels.padding = 20; // Define espaçamento da legenda
-ChartJS.defaults.plugins.legend.position = 'bottom'; // Define posição da legenda como inferior
-ChartJS.defaults.animation.duration = 1000; // Define duração da animação dos gráficos
-
-// Define paleta usada nos gráficos de clínicas
+// Define paleta premium para gráficos
 const chartPalette = [
-  COLORS.clinicVetVida, // Cor para Vet Vida nos gráficos
-  COLORS.clinicAgroPet, // Cor para AgroPet nos gráficos
-  COLORS.clinicVixenVet, // Cor para Vixen Vet nos gráficos
-  COLORS.clinicDraBicho, // Cor para Dra Bicho nos gráficos
+  COLORS.clinicVetVida,
+  COLORS.clinicAgroPet,
+  COLORS.clinicVixenVet,
+  COLORS.clinicDraBicho,
 ];
 
-// Cria versão suave (com opacidade) da paleta
-const chartPaletteSoft = chartPalette.map(color =>
-  tinycolor(color).setAlpha(0.7).toRgbString() // Aplica 70% de opacidade para cada cor da paleta
+// Cria versão com gradiente da paleta
+const chartPaletteGradient = chartPalette.map(color =>
+  `linear-gradient(135deg, ${color} 0%, ${lighten(color, 0.2)} 100%)`
 );
 
-// Componente para métricas em forma de cartão
-const MetricCard = ({ title, value, icon, cardBackgroundColor, ariaLabel }) => (
-  <Grid item xs={12} sm={6} md={3}>
-    {/* Define item de grade com tamanhos responsivos */}
+// Componente premium para métricas em forma de cartão
+const MetricCard = ({ title, value, icon, cardBackgroundColor, ariaLabel, trend, trendValue }) => (
+  <Grid item xs={12} sm={6} lg={3}>
     <motion.div
-      initial={{ opacity: 0, y: 20 }} // Estado inicial da animação (invisível e deslocado para baixo)
-      animate={{ opacity: 1, y: 0 }} // Estado final da animação (visível e na posição original)
-      transition={{ duration: 0.5 }} // Duração da animação
+      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ 
+        duration: 0.6, 
+        ease: [0.25, 0.46, 0.45, 0.94],
+        delay: Math.random() * 0.2 
+      }}
+      whileHover={{ 
+        y: -8, 
+        transition: { duration: 0.3, ease: "easeOut" } 
+      }}
     >
       <Card
         sx={{
-          background: `linear-gradient(135deg, ${cardBackgroundColor} 0%, ${tinycolor(cardBackgroundColor).lighten(10).toString()} 100%)`, // Aplica gradiente de fundo no cartão
-          color: checkContrast(COLORS.textWhite, cardBackgroundColor), // Define cor do texto com base no contraste
-          borderRadius: STYLES.cardBorderRadius, // Aplica raio de borda definido
-          boxShadow: STYLES.cardBoxShadow, // Aplica sombra definida
-          p: { xs: 2, sm: 2.5 }, // Define padding responsivo
-          height: '100%', // Garante que o cartão ocupe toda a altura disponível
-          display: 'flex', // Usa flexbox para alinhamento
-          flexDirection: 'column', // Alinha conteúdo em coluna
-          justifyContent: 'center', // Centraliza conteúdo verticalmente
-          alignItems: 'center', // Centraliza conteúdo horizontalmente
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out', // Define transições suaves para hover
+          background: `linear-gradient(135deg, ${cardBackgroundColor} 0%, ${lighten(cardBackgroundColor, 0.1)} 50%, ${lighten(cardBackgroundColor, 0.2)} 100%)`,
+          color: COLORS.textWhite,
+          borderRadius: STYLES.cardBorderRadius,
+          boxShadow: STYLES.cardBoxShadow,
+          p: { xs: 3, sm: 4 },
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
           '&:hover': {
-            transform: 'scale(1.02)', // Aumenta ligeiramente o tamanho no hover
-            boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.15)', // Aumenta a sombra no hover
+            boxShadow: STYLES.cardBoxShadowHover,
+            transform: 'translateY(-4px)',
           },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `linear-gradient(135deg, transparent 0%, ${tinycolor(cardBackgroundColor).setAlpha(0.1).toRgbString()} 100%)`,
+            pointerEvents: 'none',
+          }
         }}
-        aria-label={ariaLabel} // Define rótulo de acessibilidade
+        aria-label={ariaLabel}
       >
-        <Stack direction="column" alignItems="center" spacing={1}>
-          {/* Organiza conteúdo em uma pilha vertical */}
-          {React.cloneElement(icon, {
-            sx: {
-              color: checkContrast(COLORS.textWhite, cardBackgroundColor), // Define cor do ícone com base no contraste
-              fontSize: '2.5rem', // Define tamanho do ícone
-              transition: 'transform 0.2s ease-in-out', // Define transição suave para hover
-              '&:hover': { transform: 'scale(1.1)' }, // Aumenta o ícone no hover
-            },
-          })}
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {React.cloneElement(icon, {
+                sx: {
+                  color: COLORS.textWhite,
+                  fontSize: '1.75rem',
+                },
+              })}
+            </Box>
+            {trend && (
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <TrendingUp 
+                  sx={{ 
+                    fontSize: '1rem', 
+                    color: trend === 'up' ? COLORS.success : COLORS.error 
+                  }} 
+                />
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: COLORS.textWhite,
+                    opacity: 0.9,
+                  }}
+                >
+                  {trendValue}
+                </Typography>
+              </Stack>
+            )}
+          </Stack>
+
           <Typography
             sx={{
-              ...TYPOGRAPHY_SCALE.body, // Aplica estilo de tipografia para corpo
-              fontSize: { xs: '0.9rem', sm: '1rem' }, // Define tamanho de fonte responsivo
-              opacity: 1.9, // Aplica leve transparência
-              textAlign: 'center', // Centraliza texto
-              letterSpacing: '0.02em', // Define espaçamento entre letras
+              ...TYPOGRAPHY_SCALE.caption,
+              color: COLORS.textWhite,
+              opacity: 0.9,
+              mb: 1,
+              fontSize: '0.875rem',
+              fontWeight: 500,
             }}
           >
-            {title} {/* Exibe o título do cartão */}
+            {title}
           </Typography>
+
           <Typography
             sx={{
-              ...TYPOGRAPHY_SCALE.numeric, // Aplica estilo de tipografia para números
-              fontSize: { xs: '1.25rem', sm: '1.5rem' }, // Define tamanho de fonte responsivo
-              textAlign: 'center', // Centraliza texto
+              ...TYPOGRAPHY_SCALE.numeric,
+              color: COLORS.textWhite,
+              fontSize: { xs: '1.75rem', sm: '2rem' },
+              fontWeight: 700,
+              lineHeight: 1.2,
             }}
           >
-            {value} {/* Exibe o valor da métrica */}
+            {value}
           </Typography>
-        </Stack>
+        </Box>
       </Card>
     </motion.div>
   </Grid>
 );
 
-// Componente de gráfico Doughnut
-const DoughnutChart = ({ title, icon, data, height = 280, ariaLabel, chartId }) => {
-  // Calcula o total dos valores no dataset
+// Componente premium de gráfico Doughnut
+const DoughnutChart = ({ title, icon, data, height = 320, ariaLabel, chartId }) => {
   const total = data.datasets[0].data.reduce((acc, val) => acc + val, 0);
-  // Calcula a porcentagem do primeiro valor em relação ao total
   const percentage = total > 0 ? ((data.datasets[0].data[0] / total) * 100).toFixed(0) : '0';
 
   return (
-    <Box sx={{ height, width: '100%' }} aria-label={ariaLabel} aria-describedby={`chart-description-${chartId}`}>
-      {/* Define container do gráfico com altura e acessibilidade */}
+    <Card
+      sx={{
+        height,
+        borderRadius: STYLES.cardBorderRadius,
+        boxShadow: STYLES.cardBoxShadow,
+        p: 3,
+        background: COLORS.backgroundCard,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          boxShadow: STYLES.cardBoxShadowHover,
+          transform: 'translateY(-2px)',
+        },
+      }}
+      aria-label={ariaLabel}
+      aria-describedby={`chart-description-${chartId}`}
+    >
       <Typography id={`chart-description-${chartId}`} sx={{ display: 'none' }}>
-        {ariaLabel} {/* Define descrição oculta para acessibilidade */}
+        {ariaLabel}
       </Typography>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        {/* Organiza título e ícone em uma linha horizontal */}
-        {React.cloneElement(icon, { fontSize: 'medium' })} {/* Clona o ícone com tamanho médio */}
-        <Typography
+      
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+        <Box
           sx={{
-            fontFamily: FONTS.cardFont, // Aplica fonte definida para cartões
-            fontSize: '1.125rem', // Define tamanho da fonte
-            fontWeight: '600', // Define peso da fonte
-            color: COLORS.textPrimary, // Define cor do texto
+            p: 1.5,
+            borderRadius: '12px',
+            backgroundColor: `${COLORS.accent}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          {title} {/* Exibe o título do gráfico */}
-        </Typography>
+          {React.cloneElement(icon, { 
+            sx: { 
+              fontSize: '1.5rem', 
+              color: COLORS.accent 
+            } 
+          })}
+        </Box>
+        <Box>
+          <Typography
+            sx={{
+              ...TYPOGRAPHY_SCALE.h3,
+              fontSize: '1.25rem',
+              color: COLORS.textPrimary,
+              mb: 0.5,
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            sx={{
+              ...TYPOGRAPHY_SCALE.caption,
+              color: COLORS.textMuted,
+            }}
+          >
+            Distribuição por clínica
+          </Typography>
+        </Box>
       </Stack>
-      <Box sx={{ p: 1, position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {/* Define container centralizado para o gráfico */}
+
+      <Box sx={{ 
+        position: 'relative', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        height: 'calc(100% - 100px)'
+      }}>
         <Suspense
           fallback={
             <Skeleton
-              variant="rectangular" // Define esqueleto de carregamento retangular
-              animation="wave" // Aplica animação de onda
-              height={height} // Define altura do esqueleto
-              sx={{ borderRadius: '12px', bgcolor: 'rgba(0, 0, 0, 0.05)' }} // Aplica estilos ao esqueleto
+              variant="circular"
+              animation="wave"
+              width={200}
+              height={200}
+              sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}
             />
           }
         >
           <Doughnut
-            data={data} // Passa os dados para o gráfico
+            data={{
+              ...data,
+              datasets: data.datasets.map(dataset => ({
+                ...dataset,
+                backgroundColor: chartPalette,
+                borderWidth: 0,
+                hoverBorderWidth: 3,
+                hoverBorderColor: COLORS.textWhite,
+              }))
+            }}
             options={{
-              responsive: true, // Torna o gráfico responsivo
-              maintainAspectRatio: false, // Desativa proporção fixa
-              cutout: '70%', // Define recorte central do gráfico (tamanho do "buraco")
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '65%',
               plugins: {
                 legend: {
-                  position: 'right', // Posiciona a legenda à direita
+                  position: 'bottom',
                   labels: {
-                    font: { family: FONTS.cardFont, size: 14 }, // Define fonte e tamanho da legenda
-                    color: COLORS.textPrimary, // Define cor da legenda
-                    boxWidth: 14, // Define largura da caixa da legenda
-                    padding: 15, // Define espaçamento da legenda
+                    font: { 
+                      family: FONTS.primary, 
+                      size: 12,
+                      weight: '500'
+                    },
+                    color: COLORS.textSecondary,
+                    boxWidth: 12,
+                    boxHeight: 12,
+                    padding: 20,
+                    usePointStyle: true,
+                    pointStyle: 'circle',
                   },
                 },
                 tooltip: {
-                  titleFont: { family: FONTS.cardFont, weight: 'bold', size: 14 }, // Define fonte do título do tooltip
-                  bodyFont: { family: FONTS.cardFont, size: 12 }, // Define fonte do corpo do tooltip
-                  backgroundColor: 'rgba(0,0,0,0.7)', // Define cor de fundo do tooltip
+                  titleFont: { 
+                    family: FONTS.primary, 
+                    weight: '600', 
+                    size: 14 
+                  },
+                  bodyFont: { 
+                    family: FONTS.primary, 
+                    size: 13 
+                  },
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  titleColor: COLORS.textWhite,
+                  bodyColor: COLORS.textWhite,
+                  borderColor: COLORS.accent,
+                  borderWidth: 1,
+                  cornerRadius: 8,
+                  displayColors: true,
                   callbacks: {
                     label: (context) => {
-                      // Personaliza o texto do tooltip
-                      const label = context.label || ''; // Obtém o rótulo
-                      const value = context.parsed; // Obtém o valor
-                      const total = context.dataset.data.reduce((acc, val) => acc + val, 0); // Calcula o total
-                      const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0; // Calcula a porcentagem
-                      return `${label}: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} (${percentage}%)`; // Formata o texto com valor em reais e porcentagem
+                      const label = context.label || '';
+                      const value = context.parsed;
+                      const total = context.dataset.data.reduce((acc, val) => acc + val, 0);
+                      const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                      return `${label}: ${new Intl.NumberFormat('pt-BR', { 
+                        style: 'currency', 
+                        currency: 'BRL' 
+                      }).format(value)} (${percentage}%)`;
                     },
                   },
                 },
               },
               elements: {
-                arc: { borderWidth: 0 }, // Remove bordas dos arcos do gráfico
-              },
-              animation: {
-                animateScale: true, // Ativa animação de escala
-                animateRotate: true, // Ativa animação de rotação
-                duration: 1200, // Define duração da animação
-              },
-            }}
-            plugins={[
-              {
-                id: 'centerText', // Identificador do plugin
-                beforeDraw: (chart) => {
-                  // Função executada antes de desenhar o gráfico
-                  const { ctx, chartArea: { width, height } } = chart; // Obtém contexto e dimensões do gráfico
-                  ctx.save(); // Salva o estado do contexto
-                  ctx.font = `bold 24px ${FONTS.cardFont}`; // Define fonte para texto central
-                  ctx.fillStyle = COLORS.textPrimary; // Define cor do texto
-                  ctx.textAlign = 'center'; // Centraliza o texto horizontalmente
-                  ctx.textBaseline = 'middle'; // Centraliza o texto verticalmente
-                  
-                  ctx.restore(); // Restaura o estado do contexto
+                arc: { 
+                  borderWidth: 0,
+                  hoverBorderWidth: 2,
+                  hoverBorderColor: COLORS.textWhite,
                 },
               },
-            ]}
+              animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1000,
+                easing: 'easeInOutQuart',
+              },
+            }}
           />
         </Suspense>
       </Box>
-    </Box>
+    </Card>
   );
 };
-
+// Cria versão suave (com opacidade) da paleta
+const chartPaletteSoft = chartPalette.map(color =>
+  tinycolor(color).setAlpha(0.7).toRgbString() // Aplica 70% de opacidade para cada cor da paleta
+);
 // Componente principal do dashboard
 const Dashboard = () => {
   // Obtém informações do usuário do contexto de autenticação

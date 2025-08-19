@@ -45,12 +45,17 @@ import {
   Refresh,
   Download,
   Visibility,
+  Payment,
+  Payments,
+  LocalAtm,
+  MonetizationOn,
+  CheckCircle,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import Layout from '../layout/Layout';
 
-// Tema premium aprimorado
+// Tema premium aprimorado (mantido idêntico ao original)
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -342,7 +347,7 @@ const FinancialSummary = ({ expenses }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(value);
   };
 
@@ -409,7 +414,7 @@ const FinancialSummary = ({ expenses }) => {
                   {card.value}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                  {expenses.filter(e => 
+                  {expenses.filter(e =>
                     card.title.includes('Pagas') ? e.status === 'pago' :
                     card.title.includes('Pendentes') ? e.status === 'pendente' :
                     true
@@ -424,11 +429,51 @@ const FinancialSummary = ({ expenses }) => {
   );
 };
 
+// Função para obter ícone do método de pagamento
+const getPaymentMethodIcon = (method) => {
+  const methodLower = method?.toLowerCase() || '';
+  if (methodLower.includes('credit') || methodLower.includes('credito')) {
+    return <CreditCard sx={{ fontSize: '2rem' }} />;
+  } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
+    return <Payment sx={{ fontSize: '2rem' }} />;
+  } else if (methodLower.includes('pix')) {
+    return <Payments sx={{ fontSize: '2rem' }} />;
+  } else if (methodLower.includes('dinheiro') || methodLower.includes('cash')) {
+    return <LocalAtm sx={{ fontSize: '2rem' }} />;
+  } else if (methodLower.includes('transfer') || methodLower.includes('transferencia')) {
+    return <AccountBalance sx={{ fontSize: '2rem' }} />;
+  } else if (methodLower.includes('boleto')) {
+    return <Receipt sx={{ fontSize: '2rem' }} />;
+  } else {
+    return <MonetizationOn sx={{ fontSize: '2rem' }} />;
+  }
+};
+
+// Função para obter cor do método de pagamento
+const getPaymentMethodColor = (method) => {
+  const methodLower = method?.toLowerCase() || '';
+  if (methodLower.includes('credit') || methodLower.includes('credito')) {
+    return '#DC2626'; // Vermelho
+  } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
+    return '#059669'; // Verde
+  } else if (methodLower.includes('pix')) {
+    return '#7C3AED'; // Roxo
+  } else if (methodLower.includes('dinheiro') || methodLower.includes('cash')) {
+    return '#D97706'; // Laranja
+  } else if (methodLower.includes('transfer') || methodLower.includes('transferencia')) {
+    return '#0F766E'; // Teal
+  } else if (methodLower.includes('boleto')) {
+    return '#1E40AF'; // Azul
+  } else {
+    return '#64748B'; // Cinza
+  }
+};
+
 const ExpensesList = () => {
   const navigate = useNavigate();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
-  
+
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -482,16 +527,15 @@ const ExpensesList = () => {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value);
       });
-      
+
       const res = await api.get(`/api/financas/expenses?${params.toString()}`);
-      
-      // CORREÇÃO PRINCIPAL: Acessar res.data.items ao invés de res.data.data
+
       const expensesData = res.data?.items || [];
       const total = res.data?.totalItems || 0;
-      
+
       setExpenses(Array.isArray(expensesData) ? expensesData : []);
       setTotalItems(total);
-      
+
       if (expensesData.length === 0 && Object.values(filters).some(v => v)) {
         toast.info('Nenhuma despesa encontrada para os filtros aplicados.');
       }
@@ -507,7 +551,7 @@ const ExpensesList = () => {
 
   const handleDelete = async (id, amount) => {
     if (!window.confirm(`Tem certeza que deseja excluir a despesa de ${formatCurrency(amount)}?`)) return;
-    
+
     setLoading(true);
     try {
       await api.delete(`/api/financas/expenses/${id}`);
@@ -515,6 +559,21 @@ const ExpensesList = () => {
       fetchExpenses();
     } catch (error) {
       toast.error('Erro ao excluir despesa: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAsPaid = async (id, amount) => {
+    if (!window.confirm(`Tem certeza que deseja marcar a despesa de ${formatCurrency(amount)} como paga?`)) return;
+
+    setLoading(true);
+    try {
+      await api.patch(`/api/financas/expenses/${id}`, { status: 'pago' });
+      toast.success('Despesa marcada como paga com sucesso!');
+      fetchExpenses();
+    } catch (error) {
+      toast.error('Erro ao marcar despesa como paga: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -542,7 +601,7 @@ const ExpensesList = () => {
       'pendente': { color: 'warning', label: 'Pendente' },
       'parcelado': { color: 'info', label: 'Parcelado' },
     };
-    
+
     const config = statusConfig[status] || { color: 'default', label: status };
     return <Chip size="small" color={config.color} label={config.label} />;
   };
@@ -551,18 +610,19 @@ const ExpensesList = () => {
     const methodMap = {
       'credit_card': 'Cartão de Crédito',
       'cartao de credito': 'Cartão de Crédito',
+      'cartao de debito': 'Cartão de Débito',
       'dinheiro': 'Dinheiro',
       'pix': 'PIX',
       'boleto': 'Boleto',
       'transferencia': 'Transferência',
     };
-    return methodMap[method] || method;
+    return methodMap[method] || method || 'Não informado';
   };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(value);
   };
 
@@ -570,6 +630,36 @@ const ExpensesList = () => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  // Cálculos por método de pagamento
+  const getPaymentMethodData = () => {
+    const methodTotals = {};
+
+    expenses.forEach(exp => {
+      const method = getPaymentMethodLabel(exp.payment_method);
+      if (!methodTotals[method]) {
+        methodTotals[method] = {
+          total: 0,
+          count: 0,
+          paid: 0,
+          pending: 0,
+        };
+      }
+
+      methodTotals[method].total += parseFloat(exp.amount || 0);
+      methodTotals[method].count += 1;
+
+      if (exp.status === 'pago') {
+        methodTotals[method].paid += parseFloat(exp.amount || 0);
+      } else {
+        methodTotals[method].pending += parseFloat(exp.amount || 0);
+      }
+    });
+
+    return methodTotals;
+  };
+
+  const paymentMethodData = getPaymentMethodData();
 
   // Componente para exibição mobile (cards premium)
   const MobileExpenseCard = ({ expense, index }) => (
@@ -586,7 +676,7 @@ const ExpensesList = () => {
             left: 0,
             right: 0,
             height: 4,
-            background: expense.status === 'pago' 
+            background: expense.status === 'pago'
               ? 'linear-gradient(90deg, #059669, #10B981)'
               : expense.status === 'pendente'
               ? 'linear-gradient(90deg, #D97706, #F59E0B)'
@@ -605,9 +695,9 @@ const ExpensesList = () => {
             </Box>
             {getStatusChip(expense.status)}
           </Box>
-          
+
           <Divider sx={{ my: 2 }} />
-          
+
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -649,14 +739,14 @@ const ExpensesList = () => {
               </Box>
             </Grid>
           </Grid>
-          
-          <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
+
+          <Box sx={{ display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap' }}>
             <Button
               size="small"
               variant="outlined"
               startIcon={<Visibility />}
               onClick={() => navigate(`/despesas/${expense.id}`)}
-              sx={{ flex: 1 }}
+              sx={{ flex: 1, minWidth: '80px' }}
             >
               Ver
             </Button>
@@ -665,18 +755,30 @@ const ExpensesList = () => {
               variant="outlined"
               startIcon={<Edit />}
               onClick={() => navigate(`/despesas/editar/${expense.id}`)}
-              sx={{ flex: 1 }}
+              sx={{ flex: 1, minWidth: '80px' }}
             >
               Editar
             </Button>
+            {expense.status !== 'pago' && (
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<CheckCircle />}
+                onClick={() => handleMarkAsPaid(expense.id, expense.amount)}
+                disabled={loading}
+                sx={{ flex: 1, minWidth: '80px', borderColor: 'success.main', color: 'success.main' }}
+              >
+                Pago
+              </Button>
+            )}
             <IconButton
               size="small"
               color="error"
               onClick={() => handleDelete(expense.id, expense.amount)}
-              sx={{ 
+              sx={{
                 border: '1px solid',
                 borderColor: 'error.main',
-                '&:hover': { backgroundColor: 'error.main', color: 'white' }
+                '&:hover': { backgroundColor: 'error.main', color: 'white' },
               }}
             >
               <Delete fontSize="small" />
@@ -704,10 +806,10 @@ const ExpensesList = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  mb: 4, 
+              <Paper
+                sx={{
+                  p: 4,
+                  mb: 4,
                   background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
                   color: 'white',
                   position: 'relative',
@@ -746,6 +848,85 @@ const ExpensesList = () => {
 
             {/* Resumo Financeiro */}
             {expenses.length > 0 && <FinancialSummary expenses={expenses} />}
+
+            {/* Cards por Método de Pagamento */}
+            {Object.keys(paymentMethodData).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Paper sx={{ p: 3, mb: 4 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                    Despesas por Método de Pagamento
+                  </Typography>
+                  <Grid container spacing={3}>
+                    {Object.entries(paymentMethodData).map(([method, data], index) => (
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={method}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                        >
+                          <Card
+                            sx={{
+                              background: `linear-gradient(135deg, ${getPaymentMethodColor(method)}15 0%, ${getPaymentMethodColor(method)}25 100%)`,
+                              border: `1px solid ${getPaymentMethodColor(method)}30`,
+                              '&:hover': {
+                                borderColor: getPaymentMethodColor(method),
+                                transform: 'translateY(-8px)',
+                              },
+                            }}
+                          >
+                            <CardContent>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Box sx={{ color: getPaymentMethodColor(method), mr: 2 }}>
+                                  {getPaymentMethodIcon(method)}
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
+                                    {method}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {data.count} despesa{data.count !== 1 ? 's' : ''}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box sx={{ mb: 2 }}>
+                                <Typography variant="h5" sx={{ color: getPaymentMethodColor(method), fontWeight: 700 }}>
+                                  {formatCurrency(data.total)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Total
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                                <Box sx={{ textAlign: 'center' }}>
+                                  <Typography variant="body2" sx={{ color: 'success.main', fontWeight: 600 }}>
+                                    {formatCurrency(data.paid)}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Pago
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ textAlign: 'center' }}>
+                                  <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                                    {formatCurrency(data.pending)}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Pendente
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Paper>
+              </motion.div>
+            )}
 
             {/* Mensagem de sucesso */}
             <AnimatePresence>
@@ -928,10 +1109,9 @@ const ExpensesList = () => {
                       Nenhuma despesa encontrada
                     </Typography>
                     <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
-                      {Object.values(filters).some(v => v) 
+                      {Object.values(filters).some(v => v)
                         ? 'Tente ajustar os filtros para encontrar suas despesas'
-                        : 'Comece adicionando sua primeira despesa'
-                      }
+                        : 'Comece adicionando sua primeira despesa'}
                     </Typography>
                     <Button
                       variant="contained"
@@ -974,12 +1154,12 @@ const ExpensesList = () => {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
-                          sx={{ 
-                            '&:hover': { 
+                          sx={{
+                            '&:hover': {
                               backgroundColor: 'rgba(15, 118, 110, 0.04)',
                               transform: 'scale(1.01)',
-                              transition: 'all 0.2s ease-in-out'
-                            } 
+                              transition: 'all 0.2s ease-in-out',
+                            },
                           }}
                         >
                           <TableCell>
@@ -988,11 +1168,11 @@ const ExpensesList = () => {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 fontStyle: expense.description ? 'normal' : 'italic',
-                                color: expense.description ? 'text.primary' : 'text.secondary'
+                                color: expense.description ? 'text.primary' : 'text.secondary',
                               }}
                             >
                               {expense.description || 'Sem descrição'}
@@ -1034,6 +1214,18 @@ const ExpensesList = () => {
                                   <Edit fontSize="small" />
                                 </IconButton>
                               </Tooltip>
+                              {expense.status !== 'pago' && (
+                                <Tooltip title="Marcar como Pago">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleMarkAsPaid(expense.id, expense.amount)}
+                                    disabled={loading}
+                                    sx={{ color: 'success.main' }}
+                                  >
+                                    <CheckCircle fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                               <Tooltip title="Excluir">
                                 <IconButton
                                   size="small"
@@ -1060,4 +1252,3 @@ const ExpensesList = () => {
 };
 
 export default ExpensesList;
-
