@@ -871,7 +871,7 @@ const ExpensesList = () => {
                     </Typography>
                   </Box>
                   <Typography variant="subtitle1" sx={{ textAlign: 'center', opacity: 0.9, mb: 2 }}>
-                    Controle inteligente das suas despesas pessoais
+                    Controle de despesas
                   </Typography>
                   {totalItems > 0 && (
                     <Typography variant="body1" sx={{ textAlign: 'center', fontWeight: 600 }}>
