@@ -29,6 +29,7 @@ import {
   Fade,
   Skeleton,
   Container,
+  Fab,
 } from '@mui/material';
 import {
   Add,
@@ -43,7 +44,6 @@ import {
   AccountBalance,
   FilterList,
   Refresh,
-  Download,
   Visibility,
   Payment,
   Payments,
@@ -55,7 +55,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
 import Layout from '../layout/Layout';
 
-// Tema premium aprimorado (mantido idêntico ao original)
+// Tema atualizado com zebra stripes
 const theme = createTheme({
   palette: {
     mode: 'light',
@@ -297,6 +297,13 @@ const theme = createTheme({
             color: '#92400E',
           },
         },
+        colorError: {
+          backgroundColor: '#FEE2E2',
+          color: '#991B1B',
+          '& .MuiChip-icon': {
+            color: '#991B1B',
+          },
+        },
         colorInfo: {
           backgroundColor: '#DBEAFE',
           color: '#1E40AF',
@@ -325,8 +332,11 @@ const theme = createTheme({
     MuiTableRow: {
       styleOverrides: {
         root: {
-          '&:hover': {
+          '&:nth-of-type(odd)': {
             backgroundColor: 'rgba(15, 118, 110, 0.02)',
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(15, 118, 110, 0.04)',
           },
         },
       },
@@ -430,22 +440,22 @@ const FinancialSummary = ({ expenses }) => {
 };
 
 // Função para obter ícone do método de pagamento
-const getPaymentMethodIcon = (method) => {
+const getPaymentMethodIcon = (method, size = '2rem') => {
   const methodLower = method?.toLowerCase() || '';
   if (methodLower.includes('credit') || methodLower.includes('credito')) {
-    return <CreditCard sx={{ fontSize: '2rem' }} />;
+    return <CreditCard sx={{ fontSize: size }} />;
   } else if (methodLower.includes('debit') || methodLower.includes('debito')) {
-    return <Payment sx={{ fontSize: '2rem' }} />;
+    return <Payment sx={{ fontSize: size }} />;
   } else if (methodLower.includes('pix')) {
-    return <Payments sx={{ fontSize: '2rem' }} />;
-  } else if (methodLower.includes('dinheiro') || methodLower.includes('cash')) {
-    return <LocalAtm sx={{ fontSize: '2rem' }} />;
+    return <Payments sx={{ fontSize: size }} />;
+  } else if (methodLower.includes('dinheiro')) {
+    return <LocalAtm sx={{ fontSize: size }} />;
   } else if (methodLower.includes('transfer') || methodLower.includes('transferencia')) {
-    return <AccountBalance sx={{ fontSize: '2rem' }} />;
+    return <AccountBalance sx={{ fontSize: size }} />;
   } else if (methodLower.includes('boleto')) {
-    return <Receipt sx={{ fontSize: '2rem' }} />;
+    return <Receipt sx={{ fontSize: size }} />;
   } else {
-    return <MonetizationOn sx={{ fontSize: '2rem' }} />;
+    return <MonetizationOn sx={{ fontSize: size }} />;
   }
 };
 
@@ -494,6 +504,7 @@ const ExpensesList = () => {
     { label: 'Pago', value: 'pago' },
     { label: 'Pendente', value: 'pendente' },
     { label: 'Parcelado', value: 'parcelado' },
+    { label: 'Vencido', value: 'vencido' },
   ];
 
   const paymentMethodOptions = [
@@ -533,10 +544,19 @@ const ExpensesList = () => {
       const expensesData = res.data?.items || [];
       const total = res.data?.totalItems || 0;
 
-      setExpenses(Array.isArray(expensesData) ? expensesData : []);
+      // Verificar despesas vencidas
+      const today = new Date();
+      const updatedExpenses = expensesData.map(expense => ({
+        ...expense,
+        status: expense.status === 'pendente' && new Date(expense.due_date) < today
+          ? 'vencido'
+          : expense.status,
+      }));
+
+      setExpenses(Array.isArray(updatedExpenses) ? updatedExpenses : []);
       setTotalItems(total);
 
-      if (expensesData.length === 0 && Object.values(filters).some(v => v)) {
+      if (updatedExpenses.length === 0 && Object.values(filters).some(v => v)) {
         toast.info('Nenhuma despesa encontrada para os filtros aplicados.');
       }
     } catch (error) {
@@ -600,6 +620,7 @@ const ExpensesList = () => {
       'pago': { color: 'success', label: 'Pago' },
       'pendente': { color: 'warning', label: 'Pendente' },
       'parcelado': { color: 'info', label: 'Parcelado' },
+      'vencido': { color: 'error', label: 'Vencido' },
     };
 
     const config = statusConfig[status] || { color: 'default', label: status };
@@ -617,6 +638,10 @@ const ExpensesList = () => {
       'transferencia': 'Transferência',
     };
     return methodMap[method] || method || 'Não informado';
+  };
+
+  const getDescriptionDisplay = (description) => {
+    return description || <Typography sx={{ color: 'grey.400' }}>—</Typography>;
   };
 
   const formatCurrency = (value) => {
@@ -680,17 +705,19 @@ const ExpensesList = () => {
               ? 'linear-gradient(90deg, #059669, #10B981)'
               : expense.status === 'pendente'
               ? 'linear-gradient(90deg, #D97706, #F59E0B)'
+              : expense.status === 'vencido'
+              ? 'linear-gradient(90deg, #DC2626, #EF4444)'
               : 'linear-gradient(90deg, #3B82F6, #60A5FA)',
           }}
         />
         <CardContent sx={{ pt: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
             <Box>
-              <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700, mb: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
                 {formatCurrency(expense.amount)}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: expense.description ? 'normal' : 'italic' }}>
-                {expense.description || 'Sem descrição'}
+                {getDescriptionDisplay(expense.description)}
               </Typography>
             </Box>
             {getStatusChip(expense.status)}
@@ -714,8 +741,8 @@ const ExpensesList = () => {
             </Grid>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <CreditCard sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />
-                <Box>
+                {getPaymentMethodIcon(expense.payment_method, '18px')}
+                <Box sx={{ ml: 1 }}>
                   <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
                     Pagamento
                   </Typography>
@@ -741,48 +768,56 @@ const ExpensesList = () => {
           </Grid>
 
           <Box sx={{ display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap' }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Visibility />}
-              onClick={() => navigate(`/despesas/${expense.id}`)}
-              sx={{ flex: 1, minWidth: '80px' }}
-            >
-              Ver
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Edit />}
-              onClick={() => navigate(`/despesas/editar/${expense.id}`)}
-              sx={{ flex: 1, minWidth: '80px' }}
-            >
-              Editar
-            </Button>
-            {expense.status !== 'pago' && (
+            <Tooltip title="Ver detalhes">
               <Button
                 size="small"
                 variant="outlined"
-                startIcon={<CheckCircle />}
-                onClick={() => handleMarkAsPaid(expense.id, expense.amount)}
-                disabled={loading}
-                sx={{ flex: 1, minWidth: '80px', borderColor: 'success.main', color: 'success.main' }}
+                startIcon={<Visibility />}
+                onClick={() => navigate(`/despesas/${expense.id}`)}
+                sx={{ flex: 1, minWidth: '80px' }}
               >
-                Pago
+                Ver
               </Button>
+            </Tooltip>
+            <Tooltip title="Editar despesa">
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Edit />}
+                onClick={() => navigate(`/despesas/editar/${expense.id}`)}
+                sx={{ flex: 1, minWidth: '80px' }}
+              >
+                Editar
+              </Button>
+            </Tooltip>
+            {expense.status !== 'pago' && (
+              <Tooltip title="Marcar como pago">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<CheckCircle />}
+                  onClick={() => handleMarkAsPaid(expense.id, expense.amount)}
+                  disabled={loading}
+                  sx={{ flex: 1, minWidth: '80px', borderColor: 'success.main', color: 'success.main' }}
+                >
+                  Pago
+                </Button>
+              </Tooltip>
             )}
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => handleDelete(expense.id, expense.amount)}
-              sx={{
-                border: '1px solid',
-                borderColor: 'error.main',
-                '&:hover': { backgroundColor: 'error.main', color: 'white' },
-              }}
-            >
-              <Delete fontSize="small" />
-            </IconButton>
+            <Tooltip title="Excluir despesa">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDelete(expense.id, expense.amount)}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'error.main',
+                  '&:hover': { backgroundColor: 'error.main', color: 'white' },
+                }}
+              >
+                <Delete fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </CardContent>
       </Card>
@@ -797,6 +832,7 @@ const ExpensesList = () => {
             bgcolor: 'background.default',
             minHeight: '100vh',
             py: { xs: 2, md: 4 },
+            position: 'relative',
           }}
         >
           <Container maxWidth="xl">
@@ -893,7 +929,7 @@ const ExpensesList = () => {
                                 </Box>
                               </Box>
                               <Box sx={{ mb: 2 }}>
-                                <Typography variant="h5" sx={{ color: getPaymentMethodColor(method), fontWeight: 700 }}>
+                                <Typography variant="h5" sx={{ color: getPaymentMethodColor(method), fontWeight: 700, textAlign: 'right' }}>
                                   {formatCurrency(data.total)}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -949,7 +985,7 @@ const ExpensesList = () => {
             <Paper sx={{ p: 3, mb: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  Controles
+                  Filtros
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title="Atualizar lista">
@@ -966,16 +1002,6 @@ const ExpensesList = () => {
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, mb: showFilters ? 3 : 0, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<Add />}
-                  onClick={() => navigate('/despesas/novo')}
-                  disabled={loading}
-                  sx={{ px: 4 }}
-                >
-                  Nova Despesa
-                </Button>
                 {Object.values(filters).some(v => v) && (
                   <Button
                     variant="outlined"
@@ -1172,10 +1198,10 @@ const ExpensesList = () => {
                               variant="body2"
                               sx={{
                                 fontStyle: expense.description ? 'normal' : 'italic',
-                                color: expense.description ? 'text.primary' : 'text.secondary',
+                                color: expense.description ? 'text.primary' : 'grey.400',
                               }}
                             >
-                              {expense.description || 'Sem descrição'}
+                              {getDescriptionDisplay(expense.description)}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -1192,13 +1218,16 @@ const ExpensesList = () => {
                             {getStatusChip(expense.status)}
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">
-                              {getPaymentMethodLabel(expense.payment_method)}
-                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              {getPaymentMethodIcon(expense.payment_method, '18px')}
+                              <Typography variant="body2" sx={{ ml: 1 }}>
+                                {getPaymentMethodLabel(expense.payment_method)}
+                              </Typography>
+                            </Box>
                           </TableCell>
                           <TableCell align="center">
                             <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                              <Tooltip title="Visualizar">
+                              <Tooltip title="Ver detalhes">
                                 <IconButton
                                   size="small"
                                   onClick={() => navigate(`/despesas/${expense.id}`)}
@@ -1206,7 +1235,7 @@ const ExpensesList = () => {
                                   <Visibility fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title="Editar">
+                              <Tooltip title="Editar despesa">
                                 <IconButton
                                   size="small"
                                   onClick={() => navigate(`/despesas/editar/${expense.id}`)}
@@ -1215,7 +1244,7 @@ const ExpensesList = () => {
                                 </IconButton>
                               </Tooltip>
                               {expense.status !== 'pago' && (
-                                <Tooltip title="Marcar como Pago">
+                                <Tooltip title="Marcar como pago">
                                   <IconButton
                                     size="small"
                                     onClick={() => handleMarkAsPaid(expense.id, expense.amount)}
@@ -1226,7 +1255,7 @@ const ExpensesList = () => {
                                   </IconButton>
                                 </Tooltip>
                               )}
-                              <Tooltip title="Excluir">
+                              <Tooltip title="Excluir despesa">
                                 <IconButton
                                   size="small"
                                   color="error"
@@ -1244,6 +1273,24 @@ const ExpensesList = () => {
                 </Box>
               )}
             </Paper>
+
+            {/* Floating Action Button */}
+            <Tooltip title="Nova Despesa">
+              <Fab
+                color="primary"
+                aria-label="add"
+                onClick={() => navigate('/despesas/novo')}
+                disabled={loading}
+                sx={{
+                  position: 'fixed',
+                  bottom: 16,
+                  right: 16,
+                  zIndex: 1000,
+                }}
+              >
+                <Add />
+              </Fab>
+            </Tooltip>
           </Container>
         </Box>
       </Layout>
