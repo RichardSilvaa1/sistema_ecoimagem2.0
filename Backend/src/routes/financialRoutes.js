@@ -17,7 +17,7 @@ router.delete('/categories/:id', authMiddleware, isAdmin, categories.delete);
 
 // expenses
 router.post('/expenses', authMiddleware, isAdmin, expenses.create);
-router.get('/expenses', authMiddleware, expenses.list);
+router.get('/expenses', authMiddleware, isAdmin, expenses.list);
 router.get('/expenses/:id', authMiddleware, expenses.getById);
 router.put('/expenses/:id', authMiddleware, isAdmin, expenses.update);
 router.delete('/expenses/:id', authMiddleware, isAdmin, expenses.remove);
