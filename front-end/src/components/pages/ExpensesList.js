@@ -426,8 +426,8 @@ const FinancialSummary = ({ expenses }) => {
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                   {expenses.filter(e =>
                     card.title.includes('Pagas') ? e.status === 'pago' :
-                    card.title.includes('Pendentes') ? e.status === 'pendente' :
-                    true
+                      card.title.includes('Pendentes') ? e.status === 'pendente' :
+                        true
                   ).length} despesa{expenses.length !== 1 ? 's' : ''}
                 </Typography>
               </CardContent>
@@ -484,6 +484,7 @@ const ExpensesList = () => {
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
+  // Estado para os filtros existentes
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -499,6 +500,33 @@ const ExpensesList = () => {
     expense_date_start: '',
     expense_date_end: '',
   });
+
+  // Estado para os novos filtros de mês e ano
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // Mês atual (1-12)
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear()); // Ano atual
+
+  // Opções para os menus de mês e ano
+  const monthOptions = [
+    { label: 'Todos os Meses', value: '' }, // Opção para todos os meses
+    { label: 'Janeiro', value: 1 },
+    { label: 'Fevereiro', value: 2 },
+    { label: 'Março', value: 3 },
+    { label: 'Abril', value: 4 },
+    { label: 'Maio', value: 5 },
+    { label: 'Junho', value: 6 },
+    { label: 'Julho', value: 7 },
+    { label: 'Agosto', value: 8 },
+    { label: 'Setembro', value: 9 },
+    { label: 'Outubro', value: 10 },
+    { label: 'Novembro', value: 11 },
+    { label: 'Dezembro', value: 12 },
+  ];
+
+  const yearOptions = Array.from({ length: 10 }, (_, i) => ({
+    label: `${currentDate.getFullYear() - 5 + i}`,
+    value: currentDate.getFullYear() - 5 + i,
+  })); // Últimos 5 anos até 4 anos à frente
 
   const statusOptions = [
     { label: 'Pago', value: 'pago' },
@@ -516,6 +544,44 @@ const ExpensesList = () => {
     { label: 'Boleto', value: 'boleto' },
   ];
 
+  // Função para calcular o intervalo de datas com base no mês e ano selecionados
+  const updateDateFilters = (month, year) => {
+    if (!month && !year) {
+      return { due_date_start: '', due_date_end: '' };
+    }
+    if (!month && year) {
+      // Mostrar todas as despesas do ano selecionado
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31);
+      return {
+        due_date_start: startDate.toISOString().split('T')[0],
+        due_date_end: endDate.toISOString().split('T')[0],
+      };
+    }
+    if (month && !year) {
+      // Não aplicar filtro de data (ou definir um ano padrão, se desejar)
+      return { due_date_start: '', due_date_end: '' };
+    }
+    // Mês e ano selecionados
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Último dia do mês
+    return {
+      due_date_start: startDate.toISOString().split('T')[0],
+      due_date_end: endDate.toISOString().split('T')[0],
+    };
+  };
+
+  // Atualiza os filtros de data quando mês ou ano mudam
+  useEffect(() => {
+    const { due_date_start, due_date_end } = updateDateFilters(selectedMonth, selectedYear);
+    setFilters(prev => ({
+      ...prev,
+      due_date_start,
+      due_date_end,
+    }));
+  }, [selectedMonth, selectedYear]);
+
+  // Carrega categorias e despesas
   useEffect(() => {
     fetchCategories();
     fetchExpenses();
@@ -597,7 +663,7 @@ const ExpensesList = () => {
   };
 
   const handleFilterChange = (name, value) => {
-    setFilters({ ...filters, [name]: value });
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const clearFilters = () => {
@@ -610,6 +676,8 @@ const ExpensesList = () => {
       expense_date_start: '',
       expense_date_end: '',
     });
+    setSelectedMonth(currentDate.getMonth() + 1);
+    setSelectedYear(currentDate.getFullYear());
   };
 
   const getStatusChip = (status) => {
@@ -696,10 +764,10 @@ const ExpensesList = () => {
             background: expense.status === 'pago'
               ? 'linear-gradient(90deg, #059669, #10B981)'
               : expense.status === 'pendente'
-              ? 'linear-gradient(90deg, #D97706, #F59E0B)'
-              : expense.status === 'vencido'
-              ? 'linear-gradient(90deg, #DC2626, #EF4444)'
-              : 'linear-gradient(90deg, #3B82F6, #60A5FA)',
+                ? 'linear-gradient(90deg, #D97706, #F59E0B)'
+                : expense.status === 'vencido'
+                  ? 'linear-gradient(90deg, #DC2626, #EF4444)'
+                  : 'linear-gradient(90deg, #3B82F6, #60A5FA)',
           }}
         />
         <CardContent sx={{ pt: 3 }}>
@@ -826,50 +894,296 @@ const ExpensesList = () => {
           }}
         >
           <Container maxWidth="xl">
-            {/* Header Premium */}
+            {/* Header Premium com Dropdowns */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
               <Paper
-                sx={{
-                  p: 4,
-                  mb: 4,
-                  background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+  sx={{
+    p: 4,
+    mb: 4,
+    background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)',
+    color: 'white',
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 3,
+    boxShadow: '0 8px 32px rgba(15, 118, 110, 0.3)',
+    transition: 'all 0.3s ease-in-out',
+    '&:hover': {
+      boxShadow: '0 12px 40px rgba(15, 118, 110, 0.4)',
+      transform: 'translateY(-2px)',
+    },
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: '200px',
+      height: '200px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '50%',
+      transform: 'translate(50px, -50px)',
+      transition: 'all 0.3s ease-in-out',
+    },
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      bottom: -50,
+      left: -50,
+      width: '150px',
+      height: '150px',
+      background: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '50%',
+    },
+  }}
+>
+  <Box sx={{
+    position: 'relative',
+    zIndex: 1,
+    display: 'flex',
+    flexDirection: { xs: 'column', md: 'row' },
+    alignItems: { xs: 'flex-start', md: 'center' },
+    justifyContent: 'space-between',
+    gap: { xs: 3, md: 2 },
+  }}>
+    {/* Seção do Título e Descrição (Lado Esquerdo) */}
+    <Box sx={{ 
+      mb: { xs: 2, md: 0 },
+      flex: 1,
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center',
+        mb: 1,
+      }}>
+        <Box sx={{
+          p: 1.5,
+          borderRadius: 2,
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          mr: 2,
+          transition: 'all 0.3s ease-in-out',
+          '&:hover': {
+            background: 'rgba(255, 255, 255, 0.2)',
+            transform: 'scale(1.05)',
+          }
+        }}>
+          <AttachMoney sx={{ fontSize: '2.5rem' }} />
+        </Box>
+        <Typography 
+          variant="h3" 
+          component="h1"
+          sx={{
+            fontWeight: 700,
+            background: 'linear-gradient(45deg, #ffffff 30%, #f0fdfa 90%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          Gestão Financeira
+        </Typography>
+      </Box>
+      <Typography 
+        variant="subtitle1" 
+        sx={{ 
+          opacity: 0.9,
+          fontWeight: 500,
+          mb: 1,
+        }}
+      >
+        Controle de despesas
+      </Typography>
+      {totalItems > 0 && (
+        <Box sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          px: 2,
+          py: 0.5,
+          borderRadius: 20,
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+        }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {totalItems} despesa{totalItems !== 1 ? 's' : ''} registrada{totalItems !== 1 ? 's' : ''}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+
+    {/* Seção dos Filtros Melhorada (Lado Direito) */}
+    <Box sx={{
+      display: 'flex',
+      flexDirection: { xs: 'column', sm: 'row' },
+      gap: 2,
+      width: { xs: '100%', sm: 'auto' },
+      minWidth: { sm: '320px' },
+    }}>
+      <Autocomplete
+        options={monthOptions}
+        getOptionLabel={(option) => option.label}
+        value={monthOptions.find(opt => opt.value === selectedMonth) || null}
+        onChange={(_, value) => setSelectedMonth(value ? value.value : '')}
+        disabled={loading}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Mês"
+            size="small"
+            sx={{
+              minWidth: { xs: '100%', sm: '150px' },
+              '& .MuiOutlinedInput-root': {
+                background: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                transition: 'all 0.3s ease-in-out',
+                '& fieldset': { 
+                  border: 'none',
+                },
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                },
+                '&.Mui-focused': {
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: '2px solid rgba(255, 255, 255, 0.8)',
+                  boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.1)',
+                },
+                '& .MuiInputBase-input': {
                   color: 'white',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: '200px',
-                    height: '200px',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '50%',
-                    transform: 'translate(50px, -50px)',
-                  },
-                }}
-              >
-                <Box sx={{ position: 'relative', zIndex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <AttachMoney sx={{ mr: 2, fontSize: '3rem' }} />
-                    <Typography variant="h3" sx={{ textAlign: 'center' }}>
-                      Gestão Financeira
-                    </Typography>
-                  </Box>
-                  <Typography variant="subtitle1" sx={{ textAlign: 'center', opacity: 0.9, mb: 2 }}>
-                    Controle de despesas
-                  </Typography>
-                  {totalItems > 0 && (
-                    <Typography variant="body1" sx={{ textAlign: 'center', fontWeight: 600 }}>
-                      {totalItems} despesa{totalItems !== 1 ? 's' : ''} registrada{totalItems !== 1 ? 's' : ''}
-                    </Typography>
-                  )}
-                </Box>
-              </Paper>
+                  '&::placeholder': {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                  }
+                },
+                '& .MuiAutocomplete-endAdornment': {
+                  '& .MuiSvgIcon-root': {
+                    color: 'rgba(255, 255, 255, 0.8)',
+                  }
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 500,
+                '&.Mui-focused': {
+                  color: 'white',
+                }
+              },
+            }}
+          />
+        )}
+        PaperComponent={(props) => (
+          <Paper
+            {...props}
+            sx={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(15, 118, 110, 0.2)',
+              borderRadius: 2,
+              mt: 1,
+              '& .MuiAutocomplete-option': {
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  background: 'rgba(15, 118, 110, 0.1)',
+                },
+                '&[aria-selected="true"]': {
+                  background: 'rgba(15, 118, 110, 0.2)',
+                }
+              }
+            }}
+          />
+        )}
+      />
+      
+      <Autocomplete
+        options={yearOptions}
+        getOptionLabel={(option) => option.label}
+        value={yearOptions.find(opt => opt.value === selectedYear) || null}
+        onChange={(_, value) => setSelectedYear(value ? value.value : '')}
+        disabled={loading}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Ano"
+            size="small"
+            sx={{
+              minWidth: { xs: '100%', sm: '150px' },
+              '& .MuiOutlinedInput-root': {
+                background: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                color: 'white',
+                transition: 'all 0.3s ease-in-out',
+                '& fieldset': { 
+                  border: 'none',
+                },
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                },
+                '&.Mui-focused': {
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  border: '2px solid rgba(255, 255, 255, 0.8)',
+                  boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.1)',
+                },
+                '& .MuiInputBase-input': {
+                  color: 'white',
+                  '&::placeholder': {
+                    color: 'rgba(255, 255, 255, 0.7)',
+                  }
+                },
+                '& .MuiAutocomplete-endAdornment': {
+                  '& .MuiSvgIcon-root': {
+                    color: 'rgba(255, 255, 255, 0.8)',
+                  }
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 500,
+                '&.Mui-focused': {
+                  color: 'white',
+                }
+              },
+            }}
+          />
+        )}
+        PaperComponent={(props) => (
+          <Paper
+            {...props}
+            sx={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(15, 118, 110, 0.2)',
+              borderRadius: 2,
+              mt: 1,
+              '& .MuiAutocomplete-option': {
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  background: 'rgba(15, 118, 110, 0.1)',
+                },
+                '&[aria-selected="true"]': {
+                  background: 'rgba(15, 118, 110, 0.2)',
+                }
+              }
+            }}
+          />
+        )}
+      />
+    </Box>
+  </Box>
+</Paper>
+
+
             </motion.div>
 
             {/* Resumo Financeiro */}
@@ -975,7 +1289,7 @@ const ExpensesList = () => {
             <Paper sx={{ p: 3, mb: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
-                  Filtros
+                  Filtros Avançados
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Tooltip title="Atualizar lista">
