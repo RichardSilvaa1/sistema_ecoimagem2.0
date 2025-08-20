@@ -228,7 +228,7 @@ const theme = createTheme({
           fontWeight: 600,
           borderRadius: 8,
           padding: '10px 20px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.2s cubic-bezier(0, 0, 0.2, 1)',
           '&:hover': {
             transform: 'translateY(-1px)',
           },
@@ -494,10 +494,10 @@ const ExpensesList = () => {
     category_id: '',
     status: '',
     payment_method: '',
-    start_date: '',
-    end_date: '',
-    expense_start_date: '',
-    expense_end_date: '',
+    due_date_start: '',
+    due_date_end: '',
+    expense_date_start: '',
+    expense_date_end: '',
   });
 
   const statusOptions = [
@@ -540,7 +540,6 @@ const ExpensesList = () => {
       });
 
       const res = await api.get(`/api/financas/expenses?${params.toString()}`);
-
       const expensesData = res.data?.items || [];
       const total = res.data?.totalItems || 0;
 
@@ -571,7 +570,6 @@ const ExpensesList = () => {
 
   const handleDelete = async (id, amount) => {
     if (!window.confirm(`Tem certeza que deseja excluir a despesa de ${formatCurrency(amount)}?`)) return;
-
     setLoading(true);
     try {
       await api.delete(`/api/financas/expenses/${id}`);
@@ -586,7 +584,6 @@ const ExpensesList = () => {
 
   const handleMarkAsPaid = async (id, amount) => {
     if (!window.confirm(`Tem certeza que deseja marcar a despesa de ${formatCurrency(amount)} como paga?`)) return;
-
     setLoading(true);
     try {
       await api.patch(`/api/financas/expenses/${id}`, { status: 'pago' });
@@ -608,10 +605,10 @@ const ExpensesList = () => {
       category_id: '',
       status: '',
       payment_method: '',
-      start_date: '',
-      end_date: '',
-      expense_start_date: '',
-      expense_end_date: '',
+      due_date_start: '',
+      due_date_end: '',
+      expense_date_start: '',
+      expense_date_end: '',
     });
   };
 
@@ -622,7 +619,6 @@ const ExpensesList = () => {
       'parcelado': { color: 'info', label: 'Parcelado' },
       'vencido': { color: 'error', label: 'Vencido' },
     };
-
     const config = statusConfig[status] || { color: 'default', label: status };
     return <Chip size="small" color={config.color} label={config.label} />;
   };
@@ -659,7 +655,6 @@ const ExpensesList = () => {
   // Cálculos por método de pagamento
   const getPaymentMethodData = () => {
     const methodTotals = {};
-
     expenses.forEach(exp => {
       const method = getPaymentMethodLabel(exp.payment_method);
       if (!methodTotals[method]) {
@@ -670,17 +665,14 @@ const ExpensesList = () => {
           pending: 0,
         };
       }
-
       methodTotals[method].total += parseFloat(exp.amount || 0);
       methodTotals[method].count += 1;
-
       if (exp.status === 'pago') {
         methodTotals[method].paid += parseFloat(exp.amount || 0);
       } else {
         methodTotals[method].pending += parseFloat(exp.amount || 0);
       }
     });
-
     return methodTotals;
   };
 
@@ -722,9 +714,7 @@ const ExpensesList = () => {
             </Box>
             {getStatusChip(expense.status)}
           </Box>
-
           <Divider sx={{ my: 2 }} />
-
           <Grid container spacing={2}>
             <Grid item xs={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -1060,8 +1050,8 @@ const ExpensesList = () => {
                       <TextField
                         type="date"
                         label="Data Vencimento (Início)"
-                        value={filters.start_date}
-                        onChange={(e) => handleFilterChange('start_date', e.target.value)}
+                        value={filters.due_date_start}
+                        onChange={(e) => handleFilterChange('due_date_start', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         size="small"
                         fullWidth
@@ -1072,8 +1062,8 @@ const ExpensesList = () => {
                       <TextField
                         type="date"
                         label="Data Vencimento (Fim)"
-                        value={filters.end_date}
-                        onChange={(e) => handleFilterChange('end_date', e.target.value)}
+                        value={filters.due_date_end}
+                        onChange={(e) => handleFilterChange('due_date_end', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         size="small"
                         fullWidth
@@ -1084,8 +1074,8 @@ const ExpensesList = () => {
                       <TextField
                         type="date"
                         label="Data Despesa (Início)"
-                        value={filters.expense_start_date}
-                        onChange={(e) => handleFilterChange('expense_start_date', e.target.value)}
+                        value={filters.expense_date_start}
+                        onChange={(e) => handleFilterChange('expense_date_start', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         size="small"
                         fullWidth
@@ -1096,8 +1086,8 @@ const ExpensesList = () => {
                       <TextField
                         type="date"
                         label="Data Despesa (Fim)"
-                        value={filters.expense_end_date}
-                        onChange={(e) => handleFilterChange('expense_end_date', e.target.value)}
+                        value={filters.expense_date_end}
+                        onChange={(e) => handleFilterChange('expense_date_end', e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         size="small"
                         fullWidth
