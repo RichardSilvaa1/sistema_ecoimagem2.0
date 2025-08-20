@@ -8,7 +8,6 @@ import {
   Paper,
   Typography,
   TextField,
-  FormControl,
   Button,
   CircularProgress,
   Alert,
@@ -17,11 +16,6 @@ import {
   Autocomplete,
   Container,
   Grid,
-  Card,
-  CardContent,
-  Fade,
-  useMediaQuery,
-  useTheme,
   Tooltip,
   IconButton,
 } from '@mui/material';
@@ -29,14 +23,13 @@ import {
   Save,
   ArrowBack,
   AttachMoney,
-  Receipt,
   CalendarToday,
   Category,
   Payment,
   CheckCircle,
   Info,
   Edit,
-  Add,
+  FormatListNumbered,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NumericFormat } from 'react-number-format';
@@ -187,25 +180,12 @@ const theme = createTheme({
           border: '1px solid #E2E8F0',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.06)',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
             transform: 'translateY(-2px)',
           },
         },
         elevation1: {
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          border: '1px solid #E2E8F0',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            transform: 'translateY(-4px)',
-            borderColor: '#0F766E',
-          },
         },
       },
     },
@@ -327,8 +307,6 @@ const CurrencyInput = React.forwardRef(({ onChange, name, value, error, helperTe
 const ExpenseForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const muiTheme = useTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('md'));
 
   const {
     register,
@@ -337,6 +315,7 @@ const ExpenseForm = () => {
     control,
     watch,
     formState: { errors, isValid },
+    reset,
   } = useForm({
     mode: 'onChange',
     defaultValues: {
@@ -344,18 +323,21 @@ const ExpenseForm = () => {
       amount: '',
       expense_date: '',
       due_date: '',
-      paid_at: '',
+      payment_date: '',
       category_id: '',
       status: 'pendente',
       payment_method: '',
+      installments: '',
     },
   });
 
   const [loading, setLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState(null);
   const [categories, setCategories] = useState([]);
+  
+  const status = watch('status');
+  const isEditing = !!id;
 
-  // Opções para status e payment_method
   const statusOptions = [
     { label: 'Pago', value: 'pago', color: 'success' },
     { label: 'Pendente', value: 'pendente', color: 'warning' },
@@ -366,7 +348,7 @@ const ExpenseForm = () => {
 
   const paymentMethodOptions = [
     { label: 'Dinheiro', value: 'dinheiro' },
-    { label: 'Cartão de Crédito', value: 'credit_card' },
+    { label: 'Cartão de Crédito', value: 'cartao de credito' },
     { label: 'Cartão de Débito', value: 'cartao de debito' },
     { label: 'Transferência', value: 'transferencia' },
     { label: 'PIX', value: 'pix' },
@@ -375,8 +357,12 @@ const ExpenseForm = () => {
 
   useEffect(() => {
     fetchCategories();
-    if (id) fetchExpense();
-  }, [id]);
+    if (id) {
+      fetchExpense();
+    } else {
+      reset(); 
+    }
+  }, [id, reset]);
 
   const fetchCategories = async () => {
     try {
@@ -394,11 +380,12 @@ const ExpenseForm = () => {
       setValue('description', res.data.description || '');
       setValue('amount', res.data.amount);
       setValue('expense_date', res.data.expense_date ? new Date(res.data.expense_date).toISOString().split('T')[0] : '');
-      setValue('paid_at', res.data.paid_at ? new Date(res.data.paid_at).toISOString().split('T')[0] : '');
+      setValue('payment_date', res.data.payment_date ? new Date(res.data.payment_date).toISOString().split('T')[0] : '');
       setValue('due_date', res.data.due_date ? new Date(res.data.due_date).toISOString().split('T')[0] : '');
       setValue('category_id', res.data.category_id ? String(res.data.category_id) : '');
       setValue('status', res.data.status || 'pendente');
       setValue('payment_method', res.data.payment_method || '');
+      setValue('installments', res.data.installments || '');
     } catch (error) {
       toast.error('Erro ao carregar despesa: ' + (error.response?.data?.error || error.message));
     } finally {
@@ -406,48 +393,39 @@ const ExpenseForm = () => {
     }
   };
 
-  // Validação para garantir que a data de pagamento não seja no futuro
-  const validatePaidAt = (value) => {
-    if (!value) return true;
-    const selected = new Date(value);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selected > today) return 'A data de pagamento não pode ser no futuro';
-    return true;
-  };
-
-  // Validação para garantir que a data de vencimento não seja no passado se o status for pendente
-  const validateDueDate = (value) => {
-    const status = watch('status');
-    // A validação agora é opcional, só verifica se a data está no passado se ela for fornecida
-    if (value) { 
-      const selected = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (selected < today && status === 'pendente') {
-        return 'Atenção: A data de vencimento está no passado. Considere mudar o status.';
-      }
-    }
-    return true;
-  };
-
   const onSubmit = async (data) => {
+    const cleanedData = { ...data };
+    
+    // Deleta os campos que não se aplicam ao status
+    if (cleanedData.status === 'pago') {
+      delete cleanedData.installments;
+    } else if (cleanedData.status === 'parcelado') {
+      delete cleanedData.payment_date;
+    } else { // 'pendente', 'atrasado', 'cancelado'
+      delete cleanedData.installments;
+      delete cleanedData.payment_date;
+    }
+
     setLoading(true);
     try {
       const expenseData = {
-        ...data,
-        amount: Number(data.amount),
-        expense_date: data.expense_date || null,
-        paid_at: data.paid_at || null,
-        due_date: data.due_date || null, // Permite que o campo seja nulo
+        ...cleanedData,
+        amount: Number(cleanedData.amount),
+        expense_date: cleanedData.expense_date || null,
+        due_date: cleanedData.due_date || null,
+        payment_date: cleanedData.payment_date || null,
       };
+      
+      if (expenseData.status === 'parcelado' && expenseData.installments) {
+        expenseData.installments = Number(expenseData.installments);
+      }
 
       if (id) {
         await api.put(`/api/financas/expenses/${id}`, expenseData);
         setSaveMessage('Despesa atualizada com sucesso!');
       } else {
         await api.post('/api/financas/expenses', expenseData);
-        setSaveMessage('Despesa criada com sucesso!');
+        setSaveMessage('Despesa(s) criada(s) com sucesso!');
       }
       setTimeout(() => {
         setSaveMessage(null);
@@ -458,6 +436,36 @@ const ExpenseForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const validatePaymentDate = (value) => {
+    if (status === 'pago' && !value) {
+      return 'Data de pagamento é obrigatória para despesas pagas.';
+    }
+    if (value) {
+      const selected = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selected > today) return 'A data de pagamento não pode ser no futuro.';
+    }
+    return true;
+  };
+  
+  const validatePaymentMethod = (value) => {
+    if (!value) {
+      return 'Método de pagamento é obrigatório.';
+    }
+    return true;
+  };
+
+  const validateInstallments = (value) => {
+    if (status === 'parcelado') {
+      const numValue = parseInt(value, 10);
+      if (!value || isNaN(numValue) || numValue < 2) {
+        return 'Número de parcelas deve ser maior que 1.';
+      }
+    }
+    return true;
   };
 
   return (
@@ -504,10 +512,10 @@ const ExpenseForm = () => {
                       <AttachMoney sx={{ mr: 2, fontSize: '3rem' }} />
                       <Box>
                         <Typography variant="h4">
-                          {id ? 'Editar Despesa' : 'Nova Despesa'}
+                          {isEditing ? 'Editar Despesa' : 'Nova Despesa'}
                         </Typography>
                         <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                          {id ? 'Atualize os detalhes da despesa existente' : 'Registre uma nova despesa financeira'}
+                          {isEditing ? 'Atualize os detalhes da despesa existente' : 'Registre uma nova despesa financeira'}
                         </Typography>
                       </Box>
                     </Box>
@@ -563,8 +571,8 @@ const ExpenseForm = () => {
                   </Typography>
 
                   <Grid container spacing={4}>
-                    {/* Linha 1: Descrição */}
-                    <Grid item xs={12}>
+                    {/* Linha 1: Descrição e Data da Despesa */}
+                    <Grid item xs={12} md={6}>
                       <TextField
                         fullWidth
                         label="Descrição da Despesa"
@@ -579,6 +587,25 @@ const ExpenseForm = () => {
                         InputProps={{
                           startAdornment: (
                             <Edit sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data da Despesa"
+                        type="date"
+                        {...register('expense_date', { required: 'A data da despesa é obrigatória' })}
+                        error={!!errors.expense_date}
+                        helperText={errors.expense_date?.message}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data em que a despesa foi feita' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
                           ),
                         }}
                       />
@@ -642,101 +669,7 @@ const ExpenseForm = () => {
                       />
                     </Grid>
 
-                    {/* Linha 3: Data da Despesa e Data de Vencimento */}
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Data da Despesa"
-                        type="date"
-                        {...register('expense_date', { required: 'Data da despesa é obrigatória' })}
-                        error={!!errors.expense_date}
-                        helperText={errors.expense_date?.message}
-                        disabled={loading}
-                        InputLabelProps={{ shrink: true }}
-                        inputProps={{ 'aria-label': 'Data em que a despesa foi feita' }}
-                        InputProps={{
-                          startAdornment: (
-                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
-                          ),
-                        }}
-                      />
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Data de Vencimento"
-                        type="date"
-                        {...register('due_date', { validate: validateDueDate })}
-                        error={!!errors.due_date}
-                        helperText={errors.due_date?.message}
-                        disabled={loading}
-                        InputLabelProps={{ shrink: true }}
-                        inputProps={{ 'aria-label': 'Data de vencimento da despesa' }}
-                        InputProps={{
-                          startAdornment: (
-                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
-                          ),
-                        }}
-                      />
-                    </Grid>
-                    
-                    {/* Linha 4: Data de Pagamento, Método de Pagamento e Status */}
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Data de Pagamento"
-                        type="date"
-                        {...register('paid_at', { validate: validatePaidAt })}
-                        error={!!errors.paid_at}
-                        helperText={errors.paid_at?.message}
-                        disabled={loading}
-                        InputLabelProps={{ shrink: true }}
-                        inputProps={{ 'aria-label': 'Data de pagamento da despesa' }}
-                        InputProps={{
-                          startAdornment: (
-                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
-                          ),
-                        }}
-                      />
-                    </Grid>
-
-                    <Grid item xs={12} md={6}>
-                      <Controller
-                        name="payment_method"
-                        control={control}
-                        rules={{ required: 'Método de pagamento é obrigatório' }}
-                        render={({ field }) => (
-                          <Autocomplete
-                            options={paymentMethodOptions}
-                            getOptionLabel={(option) => option.label}
-                            value={paymentMethodOptions.find((opt) => opt.value === field.value) || null}
-                            onChange={(_, data) => field.onChange(data ? data.value : '')}
-                            disabled={loading}
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                label="Método de Pagamento"
-                                error={!!errors.payment_method}
-                                helperText={errors.payment_method?.message}
-                                InputProps={{
-                                  ...params.InputProps,
-                                  startAdornment: (
-                                    <Payment sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
-                                  ),
-                                }}
-                                inputProps={{
-                                  ...params.inputProps,
-                                  'aria-label': 'Método de pagamento',
-                                  placeholder: 'Selecione um método',
-                                }}
-                              />
-                            )}
-                          />
-                        )}
-                      />
-                    </Grid>
-
+                    {/* Linha 3: Status e Vencimento */}
                     <Grid item xs={12} md={6}>
                       <Controller
                         name="status"
@@ -744,7 +677,7 @@ const ExpenseForm = () => {
                         rules={{ required: 'Status é obrigatório' }}
                         render={({ field }) => (
                           <Autocomplete
-                            options={statusOptions}
+                            options={isEditing ? statusOptions : statusOptions.filter(opt => opt.value === 'pendente' || opt.value === 'pago' || opt.value === 'parcelado')}
                             getOptionLabel={(option) => option.label}
                             value={statusOptions.find((opt) => opt.value === field.value) || null}
                             onChange={(_, data) => field.onChange(data ? data.value : '')}
@@ -765,6 +698,108 @@ const ExpenseForm = () => {
                                   ...params.inputProps,
                                   'aria-label': 'Status da despesa',
                                   placeholder: 'Selecione um status',
+                                }}
+                              />
+                            )}
+                          />
+                        )}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data de Vencimento"
+                        type="date"
+                        {...register('due_date', { validate: validateInstallments })}
+                        error={!!errors.due_date}
+                        helperText={errors.due_date?.message}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data de vencimento da despesa' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    
+                    {/* Condicional para o campo de parcelas */}
+                    <AnimatePresence>
+                      {status === 'parcelado' && (
+                        <Grid item xs={12} md={6} component={motion.div}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <TextField
+                            fullWidth
+                            label="Número de Parcelas"
+                            type="number"
+                            {...register('installments', { validate: validateInstallments })}
+                            error={!!errors.installments}
+                            helperText={errors.installments?.message || 'Informe o número de parcelas (mínimo 2)'}
+                            disabled={loading}
+                            InputProps={{
+                              startAdornment: (
+                                <FormatListNumbered sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                              ),
+                            }}
+                          />
+                        </Grid>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Campos de pagamento agora sempre visíveis */}
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Data de Pagamento"
+                        type="date"
+                        {...register('payment_date', { validate: validatePaymentDate })}
+                        error={!!errors.payment_date}
+                        helperText={errors.payment_date?.message || 'Preencha se a despesa já foi paga'}
+                        disabled={loading}
+                        InputLabelProps={{ shrink: true }}
+                        inputProps={{ 'aria-label': 'Data de pagamento da despesa' }}
+                        InputProps={{
+                          startAdornment: (
+                            <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                          ),
+                        }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <Controller
+                        name="payment_method"
+                        control={control}
+                        rules={{ validate: validatePaymentMethod }}
+                        render={({ field }) => (
+                          <Autocomplete
+                            options={paymentMethodOptions}
+                            getOptionLabel={(option) => option.label}
+                            value={paymentMethodOptions.find((opt) => opt.value === field.value) || null}
+                            onChange={(_, data) => field.onChange(data ? data.value : '')}
+                            disabled={loading}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Método de Pagamento"
+                                error={!!errors.payment_method}
+                                helperText={errors.payment_method?.message || 'Preencha se a despesa já foi paga ou parcelada'}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <Payment sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />
+                                  ),
+                                }}
+                                inputProps={{
+                                  ...params.inputProps,
+                                  'aria-label': 'Método de pagamento',
+                                  placeholder: 'Selecione um método',
                                 }}
                               />
                             )}
@@ -800,7 +835,7 @@ const ExpenseForm = () => {
                         fontWeight: 600,
                       }}
                     >
-                      {loading ? 'Salvando...' : id ? 'Atualizar Despesa' : 'Salvar Despesa'}
+                      {loading ? 'Salvando...' : isEditing ? 'Atualizar Despesa' : 'Salvar Despesa'}
                     </Button>
                   </Box>
                 </form>
