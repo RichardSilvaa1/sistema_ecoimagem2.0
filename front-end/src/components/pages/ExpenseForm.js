@@ -230,7 +230,6 @@ const ExpenseForm = () => {
     defaultValues: {
       description: '',
       amount: '',
-      expense_date: '',
       due_date: '',
       paid_at: '',
       category_id: '',
@@ -286,7 +285,6 @@ const ExpenseForm = () => {
       setValue('paid_at', expenseState.paid_at ? new Date(expenseState.paid_at).toISOString().split('T')[0] : '');
       setValue('description', expenseState.description || '');
       setValue('amount', expenseState.amount || '');
-      setValue('expense_date', expenseState.expense_date ? new Date(expenseState.expense_date).toISOString().split('T')[0] : '');
       setValue('due_date', expenseState.due_date ? new Date(expenseState.due_date).toISOString().split('T')[0] : '');
       setValue('category_id', expenseState.category_id ? String(expenseState.category_id) : '');
       setValue('payment_method', expenseState.payment_method || '');
@@ -312,9 +310,8 @@ const ExpenseForm = () => {
       setExpenseState(res.data);
       setValue('description', res.data.description || '');
       setValue('amount', res.data.amount || '');
-      setValue('expense_date', res.data.expense_date ? new Date(res.data.expense_date).toISOString().split('T')[0] : '');
-      setValue('paid_at', res.data.paid_at ? new Date(res.data.paid_at).toISOString().split('T')[0] : '');
       setValue('due_date', res.data.due_date ? new Date(res.data.due_date).toISOString().split('T')[0] : '');
+      setValue('paid_at', res.data.paid_at ? new Date(res.data.paid_at).toISOString().split('T')[0] : '');
       setValue('category_id', res.data.category_id ? String(res.data.category_id) : '');
       setValue('status', res.data.status || 'pendente');
       setValue('payment_method', res.data.payment_method || '');
@@ -349,7 +346,6 @@ const ExpenseForm = () => {
     const expenseData = {
       ...cleanedData,
       amount: Number(cleanedData.amount),
-      expense_date: cleanedData.expense_date || null,
       due_date: cleanedData.due_date || null,
       paid_at: cleanedData.paid_at || null,
       payment_method: cleanedData.payment_method || null,
@@ -378,7 +374,6 @@ const ExpenseForm = () => {
       setValue('paid_at', response.data.paid_at ? new Date(response.data.paid_at).toISOString().split('T')[0] : '');
       setValue('description', response.data.description || '');
       setValue('amount', response.data.amount || '');
-      setValue('expense_date', response.data.expense_date ? new Date(response.data.expense_date).toISOString().split('T')[0] : '');
       setValue('due_date', response.data.due_date ? new Date(response.data.due_date).toISOString().split('T')[0] : '');
       setValue('category_id', response.data.category_id ? String(response.data.category_id) : '');
       setValue('payment_method', response.data.payment_method || '');
@@ -432,13 +427,6 @@ const ExpenseForm = () => {
   const validateStatus = (value) => {
     if (value === 'atrasado' && !due_date) {
       return 'O status "Atrasado" requer uma data de vencimento.';
-    }
-    return true;
-  };
-
-  const validateExpenseDate = (value) => {
-    if (!isEditing && !value) {
-      return 'A data da despesa é obrigatória para novas despesas.';
     }
     return true;
   };
@@ -516,8 +504,8 @@ const ExpenseForm = () => {
                   </Typography>
 
                   <Grid container spacing={{ xs: 2, md: 4 }}>
-                    {/* Linha 1: Descrição e Data da Despesa */}
-                    <Grid item xs={12} md={6}>
+                    {/* Linha 1: Descrição */}
+                    <Grid item xs={12}>
                       <Tooltip title="Descreva claramente a despesa para fácil identificação">
                         <TextField
                           fullWidth
@@ -540,34 +528,6 @@ const ExpenseForm = () => {
                           inputProps={{ 'aria-label': 'Descrição da despesa', 'aria-describedby': 'description-error' }}
                           InputProps={{
                             startAdornment: <Edit sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />,
-                          }}
-                        />
-                      </Tooltip>
-                    </Grid>
-
-                    <Grid item xs={12} md={6}>
-                      <Tooltip title="Data em que a despesa foi realizada">
-                        <TextField
-                          fullWidth
-                          label="Data da Despesa"
-                          type="date"
-                          {...register('expense_date', { validate: validateExpenseDate })}
-                          error={!!errors.expense_date}
-                          helperText={
-                            errors.expense_date ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <ErrorOutline sx={{ fontSize: '1rem' }} />
-                                {errors.expense_date.message}
-                              </Box>
-                            ) : (
-                              isEditing ? 'Data da despesa (opcional para edição)' : 'Data da despesa (obrigatória)'
-                            )
-                          }
-                          disabled={loading}
-                          InputLabelProps={{ shrink: true }}
-                          inputProps={{ 'aria-label': 'Data em que a despesa foi feita', 'aria-describedby': 'expense-date-error' }}
-                          InputProps={{
-                            startAdornment: <CalendarToday sx={{ color: 'text.secondary', mr: 1, fontSize: '1.2rem' }} />,
                           }}
                         />
                       </Tooltip>
@@ -682,16 +642,18 @@ const ExpenseForm = () => {
                       <Tooltip title="Data de vencimento da despesa">
                         <TextField
                           fullWidth
-                          label="Data de Vencimento"
+                          label="Data"
                           type="date"
                           {...register('due_date', { validate: () => validateStatus(status) })}
                           error={!!errors.due_date || !!errors.status}
                           helperText={
-                            (errors.due_date || errors.status) && (
+                            (errors.due_date || errors.status) ? (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <ErrorOutline sx={{ fontSize: '1rem' }} />
                                 {errors.due_date?.message || errors.status?.message}
                               </Box>
+                            ) : (
+                              'Data de vencimento da despesa'
                             )
                           }
                           disabled={loading}
